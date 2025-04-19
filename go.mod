@@ -4,7 +4,7 @@ go 1.24.2
 
 require (
 	gitee.com/linakesi/lzc-sdk v0.0.0-20250327035546-0276689d9863
-	github.com/mark3labs/mcp-go v0.19.0
+	github.com/mark3labs/mcp-go v0.21.1
 	github.com/rs/zerolog v1.34.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
