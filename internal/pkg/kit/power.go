@@ -24,8 +24,8 @@ var (
 
 func (m *Manager) PowerKit() server.ServerTool {
 	powerKit := server.ServerTool{
-		Tool: mcp.NewTool("lazycat_power_op",
-			mcp.WithDescription("let lazycat device to invoke a power operation 设置懒猫设备进行电源操作"),
+		Tool: mcp.NewTool("lazycat_power",
+			mcp.WithDescription("lazycat power operation 懒猫微服电源相关操作"),
 			mcp.WithString("operation",
 				mcp.Required(),
 				mcp.Enum(powerOff, reboot, queryLedStatus, ledOff, ledOn),
