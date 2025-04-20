@@ -15,5 +15,5 @@
 ### 交互
 - [ ] 对话框交互
 ## 使用说明
- Cherry Studio中添加mcp服务器即可,貌似硅基流动的r1不支持调用,但是Qwen2.5-7B-Instruct是支持的
+ Cherry Studio中添加mcp服务器即可,其他客户端请参考对应的使用说明文档.
 
