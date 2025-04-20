@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>懒猫微服 MCP</title>
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --text-color: #1D1D1F;
+            --background-color: #FFFFFF;
+            --secondary-background: #F5F5F7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.5;
+            color: var(--text-color);
+            background-color: var(--background-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            padding: 80px 0;
+            text-align: center;
+            background: linear-gradient(180deg, var(--secondary-background) 0%, var(--background-color) 100%);
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #007AFF, #5856D6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 24px;
+            color: #86868B;
+            margin-bottom: 40px;
+        }
+
+        .features {
+            padding: 80px 0;
+            background-color: var(--secondary-background);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .feature-card {
+            background: var(--background-color);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .feature-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .feature-description {
+            color: #86868B;
+            font-size: 16px;
+        }
+
+        .endpoint {
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .endpoint-box {
+            display: inline-block;
+            background: var(--secondary-background);
+            padding: 20px 40px;
+            border-radius: 12px;
+            margin-top: 20px;
+            font-family: "SF Mono", monospace;
+            font-size: 18px;
+            color: var(--primary-color);
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background-color: #34C759;
+            color: white;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 36px;
+            }
+
+            .subtitle {
+                font-size: 20px;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>懒猫MCP</h1>
+            <p class="subtitle">构建您的懒猫与AI的智能桥梁</p>
+        </div>
+    </header>
+
+    <section class="features">
+        <div class="container">
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">💡</div>
+                    <h3 class="feature-title">电源控制</h3>
+                    <p class="feature-description">实时监控和控制设备电源状态，包括LED指示灯的管理</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3 class="feature-title">设备管理</h3>
+                    <p class="feature-description">支持设备关机和重启操作，确保系统稳定运行</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3 class="feature-title">AI 交互</h3>
+                    <p class="feature-description">通过大语言模型实现智能硬件控制和交互</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="endpoint">
+        <div class="container">
+            <h2>SSE 端点</h2>
+            <p>使用以下地址连接服务：</p>
+            <div class="endpoint-box">
+                <span id="endpoint-url">/sse</span>
+                <span class="status">在线</span>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // 自动生成完整的URL
+        document.addEventListener('DOMContentLoaded', function() {
+            const baseUrl = window.location.origin;
+            const endpointUrl = document.getElementById('endpoint-url');
+            endpointUrl.textContent = `${baseUrl}/sse`;
+        });
+    </script>
+</body>
+</html> 

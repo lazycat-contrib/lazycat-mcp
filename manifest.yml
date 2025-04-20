@@ -1,0 +1,24 @@
+lzc-sdk-version: 0.1
+name: 懒猫MCP
+package: cloud.lazycat.app.czyt.lazycat-mcp
+version: 0.0.1
+description:
+license: https://choosealicense.com/licenses/mit/
+homepage:
+author:
+application:
+  subdomain: lazycat-mcp
+  background_task: true
+  multi_instance: false
+  gpu_accel: false
+  kvm_accel: false
+  usb_accel: false
+  handlers:
+    error_page_templates:
+      404: /lzcapp/pkg/content/errors/404.html.tpl
+  public_path:
+    - /
+    - /help
+  routes:
+    - /=exec://3000,/lzcapp/pkg/content/lazycat-mcp
+    - /help=file:///lzcapp/pkg/content/help.html
