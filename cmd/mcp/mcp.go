@@ -25,6 +25,9 @@ func main() {
 	svr := server.NewMCPServer(
 		"LazyCat Mcp 🚀",
 		version,
+		server.WithLogging(),
+		server.WithRecovery(),
+		server.WithToolCapabilities(true),
 	)
 	kitManager := kit.NewManager(context.Background(), logger)
 	defer kitManager.CleanUp()
