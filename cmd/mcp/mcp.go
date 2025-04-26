@@ -28,13 +28,18 @@ func main() {
 		server.WithLogging(),
 		server.WithRecovery(),
 		server.WithToolCapabilities(true),
+		server.WithResourceCapabilities(true, true),
 	)
 	kitManager := kit.NewManager(context.Background(), logger)
 	defer kitManager.CleanUp()
 
+	kits := make([]server.ServerTool, 0, 10)
+	// 电源功能选项
+	kits = append(kits, kitManager.PowerKits()...)
+	// 域名功能
+	kits = append(kits, kitManager.DomainKits()...)
 	svr.AddTools(
-		// 电源功能选项
-		kitManager.PowerKit(),
+		kits...,
 	)
 	sseServer := server.NewSSEServer(svr)
 	err := sseServer.Start(":3000")

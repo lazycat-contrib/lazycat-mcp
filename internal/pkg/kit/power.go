@@ -3,7 +3,6 @@ package kit
 import (
 	"context"
 	"errors"
-	"fmt"
 	users "gitee.com/linakesi/lzc-sdk/lang/go/common"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -18,11 +17,15 @@ const (
 	ledOff         = "led-off"
 )
 
+type ledStatus struct {
+	LedOn bool `json:"led_on"`
+}
+
 var (
 	unSupportOperation = errors.New("unsupport operation")
 )
 
-func (m *Manager) PowerKit() server.ServerTool {
+func (m *Manager) PowerKits() []server.ServerTool {
 	powerKit := server.ServerTool{
 		Tool: mcp.NewTool("lazycat_power",
 			mcp.WithDescription("lazycat power operation 懒猫微服电源相关操作"),
@@ -34,7 +37,7 @@ func (m *Manager) PowerKit() server.ServerTool {
 		),
 		Handler: m.powerKitHandler,
 	}
-	return powerKit
+	return []server.ServerTool{powerKit}
 }
 
 func (m *Manager) powerKitHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -52,13 +55,13 @@ func (m *Manager) powerKitHandler(ctx context.Context, request mcp.CallToolReque
 			if err != nil {
 				return checkMCPErr(err)
 			}
-			ledStatus := ""
+			status := &ledStatus{}
 			if on {
-				ledStatus = "on"
+				status.LedOn = true
 			} else {
-				ledStatus = "off"
+				status.LedOn = false
 			}
-			return mcp.NewToolResultText(fmt.Sprintf("led staus:%s", ledStatus)), nil
+			return mcp.NewToolResultText(j(status)), nil
 		case ledOn:
 			err := m.setLedStatus(ctx, true)
 			return checkMCPErr(err)
