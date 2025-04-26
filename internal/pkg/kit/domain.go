@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+const (
+	whiosMaxRetries = 3
+)
+
 func (m *Manager) DomainKits() []server.ServerTool {
 	domainCheck := server.ServerTool{
 		Tool: mcp.NewTool("domain_base_info_lookup",
@@ -77,13 +81,13 @@ func getDomainBaseInfo(domain string) (*domainBaseInfo, error) {
 	// 4. Check WHOIS information with retry
 	var whoisResult string
 
-	for i := 0; i < maxRetries; i++ {
+	for i := 0; i < whiosMaxRetries; i++ {
 		result, err := whois.Whois(domain)
 		if err == nil {
 			whoisResult = result
 			break
 		}
-		if i < maxRetries-1 {
+		if i < whiosMaxRetries-1 {
 			time.Sleep(time.Second * 2) // Wait 2 seconds before retry
 		}
 	}
