@@ -38,6 +38,8 @@ func main() {
 	kits = append(kits, kitManager.PowerKits()...)
 	// 域名功能
 	kits = append(kits, kitManager.DomainKits()...)
+	// 设备列表
+	kits = append(kits, kitManager.DeviceKits()...)
 	svr.AddTools(
 		kits...,
 	)

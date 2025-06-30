@@ -41,38 +41,40 @@ func (m *Manager) PowerKits() []server.ServerTool {
 }
 
 func (m *Manager) powerKitHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	if _op, ok := request.Params.Arguments["operation"].(string); ok {
-		op := strings.ToLower(strings.Trim(_op, ""))
-		switch op {
-		case powerOff:
-			err := m.powerOff(ctx)
-			return checkMCPErr(err)
-		case reboot:
-			err := m.reboot(ctx)
-			return checkMCPErr(err)
-		case queryLedStatus:
-			on, err := m.queryLedStatus(ctx)
-			if err != nil {
-				return checkMCPErr(err)
-			}
-			status := &ledStatus{}
-			if on {
-				status.LedOn = true
-			} else {
-				status.LedOn = false
-			}
-			return mcp.NewToolResultText(j(status)), nil
-		case ledOn:
-			err := m.setLedStatus(ctx, true)
-			return checkMCPErr(err)
-		case ledOff:
-			err := m.setLedStatus(ctx, false)
-			return checkMCPErr(err)
-		default:
-			return mcp.NewToolResultText(operationSuccess), nil
-		}
+	_op, err := request.RequireString("operation")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
-	return mcp.NewToolResultText(operationFailed), unSupportOperation
+
+	op := strings.ToLower(strings.Trim(_op, ""))
+	switch op {
+	case powerOff:
+		err := m.powerOff(ctx)
+		return checkMCPErr(err)
+	case reboot:
+		err := m.reboot(ctx)
+		return checkMCPErr(err)
+	case queryLedStatus:
+		on, err := m.queryLedStatus(ctx)
+		if err != nil {
+			return checkMCPErr(err)
+		}
+		status := &ledStatus{}
+		if on {
+			status.LedOn = true
+		} else {
+			status.LedOn = false
+		}
+		return mcp.NewToolResultText(j(status)), nil
+	case ledOn:
+		err := m.setLedStatus(ctx, true)
+		return checkMCPErr(err)
+	case ledOff:
+		err := m.setLedStatus(ctx, false)
+		return checkMCPErr(err)
+	default:
+		return mcp.NewToolResultText(operationSuccess), nil
+	}
 }
 
 func (m *Manager) powerOff(ctx context.Context) error {

@@ -30,14 +30,15 @@ func (m *Manager) DomainKits() []server.ServerTool {
 }
 
 func (m *Manager) domainCheckHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	if domain, ok := request.Params.Arguments["domain"].(string); ok {
-		baseInfo, err := getDomainBaseInfo(domain)
-		if err != nil {
-			return mcp.NewToolResultText(operationFailed), err
-		}
-		return mcp.NewToolResultText(j(baseInfo)), nil
+	domain, err := request.RequireString("domain")
+	if err != nil {
+		return nil, err
 	}
-	return mcp.NewToolResultText(operationFailed), unSupportOperation
+	baseInfo, err := getDomainBaseInfo(domain)
+	if err != nil {
+		return mcp.NewToolResultText(operationFailed), err
+	}
+	return mcp.NewToolResultText(j(baseInfo)), nil
 }
 
 type domainBaseInfo struct {
