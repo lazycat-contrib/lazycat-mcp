@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"github.com/mark3labs/mcp-go/server"
-	"lzcycat-mcp/internal/pkg/kit"
-	"lzcycat-mcp/internal/pkg/zlog"
+	"lazycat-mcp/internal/pkg/kit"
+	"lazycat-mcp/internal/pkg/zlog"
 )
 
 const (

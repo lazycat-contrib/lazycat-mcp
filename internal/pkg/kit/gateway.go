@@ -3,7 +3,7 @@ package kit
 import (
 	"context"
 	gohelper "gitee.com/linakesi/lzc-sdk/lang/go"
-	"lzcycat-mcp/internal/pkg/zlog"
+	"lazycat-mcp/internal/pkg/zlog"
 )
 
 type Manager struct {
