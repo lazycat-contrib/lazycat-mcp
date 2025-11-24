@@ -5,7 +5,7 @@ go 1.25.1
 require (
 	gitee.com/linakesi/lzc-sdk v0.0.0-20250827090820-1135f8aa490a
 	github.com/likexian/whois v1.15.6
-	github.com/mark3labs/mcp-go v0.42.0
+	github.com/mark3labs/mcp-go v0.43.1
 	github.com/rs/zerolog v1.34.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
