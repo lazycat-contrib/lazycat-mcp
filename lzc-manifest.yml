@@ -1,11 +1,3 @@
-name: 懒猫MCP
-package: cloud.lazycat.app.czyt.lazycat-mcp
-version: 0.0.3
-min_os_version: 1.3.8
-description:
-license: https://choosealicense.com/licenses/mit/
-homepage:
-author:
 application:
   subdomain: lazycat-mcp
   background_task: true
@@ -13,9 +5,17 @@ application:
   gpu_accel: false
   kvm_accel: false
   usb_accel: false
-  handlers:
-    error_page_templates:
-      404: /lzcapp/pkg/content/errors/404.html.tpl
+  injects:
+    - id: custom-404-page
+      on: response
+      auth_required: false
+      when:
+        - "/*"
+      do: |
+        if (ctx.status === 404) {
+          ctx.response.send(302, "", { location: "/help" });
+          return;
+        }
   public_path:
     - /
     - /help
