@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>懒猫 MCP</title>
+  <link rel="stylesheet" href="/console.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">M</div>
+        <div>
+          <h1>懒猫 MCP</h1>
+          <p class="muted" data-i18n="subtitle">多实例 MCP 网关</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div class="language-switch" role="group" data-i18n-aria="language">
+          <button type="button" data-lang-option="zh">中文</button>
+          <button type="button" data-lang-option="en">EN</button>
+        </div>
+        <div class="status" id="statusPills"></div>
+      </div>
+    </header>
+
+    <section class="grid">
+      <div class="stack">
+        <section class="panel" aria-labelledby="providerTitle">
+          <div class="panel-head">
+            <div>
+              <h2 id="providerTitle" data-i18n="programMcp">程序 MCP</h2>
+              <p class="muted" data-i18n="resourceFilteredApps">资源目录筛选后的程序</p>
+            </div>
+            <button class="ghost" id="reloadBtn" type="button" data-i18n="refresh">刷新</button>
+          </div>
+          <div class="panel-body">
+            <form id="providerForm" class="form-grid">
+              <label class="span-2"><span data-i18n="app">程序</span>
+                <select id="appSelect" required></select>
+              </label>
+              <label><span data-i18n="appSubpath">程序子路径</span>
+                <input id="slugInput" autocomplete="off" required>
+              </label>
+              <label><span data-i18n="resourceProvider">资源 Provider</span>
+                <select id="resourceSelect"></select>
+              </label>
+              <label class="span-2"><span data-i18n="programMcpPath">程序 MCP 路径</span>
+                <input id="endpointInput" autocomplete="off" required>
+              </label>
+              <div class="actions span-2">
+                <button class="primary" id="saveProviderBtn" type="submit" data-i18n="save">保存</button>
+                <span class="muted mono" id="suggestedPath"></span>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="providersTitle">
+          <div class="panel-head">
+            <h2 id="providersTitle" data-i18n="publishedUpstreams">已发布上游</h2>
+            <span class="pill info" id="providerCount">0</span>
+          </div>
+          <div class="panel-body">
+            <div id="providerList" class="list"></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="stack">
+        <section class="panel" aria-labelledby="tokenTitle">
+          <div class="panel-head">
+            <h2 id="tokenTitle">MCP Token</h2>
+            <span class="pill" id="tokenCount">0</span>
+          </div>
+          <div class="panel-body">
+            <form id="tokenForm" class="actions">
+              <input id="tokenNameInput" data-i18n-aria="tokenName" data-i18n-placeholder="tokenName" aria-label="Token 名称" placeholder="Token 名称" autocomplete="off">
+              <button class="primary" type="submit" data-i18n="create">创建</button>
+            </form>
+            <div class="token-once" id="tokenOnce">
+              <h3 data-i18n="newToken">新 Token</h3>
+              <div class="mono" id="tokenValue"></div>
+              <div class="actions">
+                <button type="button" id="copyTokenBtn" data-i18n="copy">复制</button>
+              </div>
+            </div>
+            <div id="tokenList" class="list"></div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="skillTitle">
+          <div class="panel-head">
+            <h2 id="skillTitle" data-i18n="skillInstallPath">Skills 安装路径</h2>
+            <span class="pill ok">HTTP</span>
+          </div>
+          <div class="panel-body">
+            <div class="item">
+              <div class="mono" id="skillPath">-</div>
+              <div class="actions">
+                <button type="button" id="copySkillBtn" data-i18n="copy">复制</button>
+              </div>
+            </div>
+            <div class="item">
+              <h3 data-i18n="selfMcp">本程序 MCP</h3>
+              <div class="mono" id="selfMcpPath">/mcp</div>
+              <span class="pill warn">Token</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const messages = {
+      zh: {
+        title: "懒猫 MCP",
+        subtitle: "多实例 MCP 网关",
+        language: "语言",
+        programMcp: "程序 MCP",
+        resourceFilteredApps: "资源目录筛选后的程序",
+        refresh: "刷新",
+        app: "程序",
+        appSubpath: "程序子路径",
+        resourceProvider: "资源 Provider",
+        programMcpPath: "程序 MCP 路径",
+        save: "保存",
+        publishedUpstreams: "已发布上游",
+        tokenName: "Token 名称",
+        create: "创建",
+        newToken: "新 Token",
+        copy: "复制",
+        skillInstallPath: "Skills 安装路径",
+        selfMcp: "本程序 MCP",
+        ticketCaptured: "用户票据已捕获",
+        waitingTicket: "等待用户票据",
+        tokenCount: "Token {count}",
+        providerCount: "Provider {count}",
+        noResourceApps: "未发现带资源的程序",
+        manualInput: "手动输入",
+        noTokens: "还没有 Token",
+        disable: "禁用",
+        enable: "启用",
+        delete: "删除",
+        enabled: "启用",
+        disabled: "禁用",
+        noProviders: "还没有发布上游",
+        stop: "停用",
+        available: "可用",
+        stopped: "停用",
+        copied: "已复制",
+        copyFailed: "复制失败",
+        saved: "已保存"
+      },
+      en: {
+        title: "LazyCat MCP",
+        subtitle: "Multi-instance MCP gateway",
+        language: "Language",
+        programMcp: "App MCP",
+        resourceFilteredApps: "Apps filtered by resource exports",
+        refresh: "Refresh",
+        app: "App",
+        appSubpath: "App subpath",
+        resourceProvider: "Resource Provider",
+        programMcpPath: "App MCP path",
+        save: "Save",
+        publishedUpstreams: "Published Upstreams",
+        tokenName: "Token name",
+        create: "Create",
+        newToken: "New Token",
+        copy: "Copy",
+        skillInstallPath: "Skills install path",
+        selfMcp: "This app MCP",
+        ticketCaptured: "User ticket captured",
+        waitingTicket: "Waiting for user ticket",
+        tokenCount: "Token {count}",
+        providerCount: "Provider {count}",
+        noResourceApps: "No apps with resources found",
+        manualInput: "Manual input",
+        noTokens: "No tokens yet",
+        disable: "Disable",
+        enable: "Enable",
+        delete: "Delete",
+        enabled: "Enabled",
+        disabled: "Disabled",
+        noProviders: "No upstreams published yet",
+        stop: "Stop",
+        available: "Available",
+        stopped: "Stopped",
+        copied: "Copied",
+        copyFailed: "Copy failed",
+        saved: "Saved"
+      }
+    };
+
+    const state = {
+      status: null,
+      apps: [],
+      tokens: [],
+      providers: []
+    };
+
+    const $ = (id) => document.getElementById(id);
+    let currentLang = initialLanguage();
+
+    function initialLanguage() {
+      const saved = localStorage.getItem("lazycat-mcp-lang");
+      if (saved === "zh" || saved === "en") return saved;
+      return navigator.language && navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en";
+    }
+
+    function t(key, vars = {}) {
+      const template = (messages[currentLang] && messages[currentLang][key]) || messages.zh[key] || key;
+      return template.replace(/\{(\w+)\}/g, (_, name) => String(vars[name] ?? ""));
+    }
+
+    function setLanguage(lang, persist = true) {
+      currentLang = lang === "en" ? "en" : "zh";
+      if (persist) localStorage.setItem("lazycat-mcp-lang", currentLang);
+      applyI18n();
+      render();
+    }
+
+    function applyI18n() {
+      document.documentElement.lang = currentLang === "zh" ? "zh-CN" : "en";
+      document.title = t("title");
+      document.querySelectorAll("[data-i18n]").forEach((node) => {
+        node.textContent = t(node.dataset.i18n);
+      });
+      document.querySelectorAll("[data-i18n-placeholder]").forEach((node) => {
+        node.setAttribute("placeholder", t(node.dataset.i18nPlaceholder));
+      });
+      document.querySelectorAll("[data-i18n-aria]").forEach((node) => {
+        node.setAttribute("aria-label", t(node.dataset.i18nAria));
+      });
+      document.querySelectorAll("[data-lang-option]").forEach((button) => {
+        const active = button.dataset.langOption === currentLang;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+    }
+
+    function api(path, options = {}) {
+      const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+      return fetch(path, Object.assign({}, options, { headers })).then(async (res) => {
+        if (res.status === 204) return null;
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const message = data.error && data.error.message ? data.error.message : res.statusText;
+          throw new Error(message);
+        }
+        return data;
+      });
+    }
+
+    function showToast(message) {
+      const toast = $("toast");
+      toast.textContent = message;
+      toast.style.display = "block";
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => { toast.style.display = "none"; }, 3600);
+    }
+
+    function copyText(text) {
+      navigator.clipboard.writeText(text).then(
+        () => showToast(t("copied")),
+        () => showToast(t("copyFailed"))
+      );
+    }
+
+    async function loadAll() {
+      const [status, apps, tokens, providers] = await Promise.all([
+        api("/api/status"),
+        api("/api/apps"),
+        api("/api/tokens"),
+        api("/api/providers")
+      ]);
+      state.status = status;
+      state.apps = apps.apps || [];
+      state.tokens = tokens.tokens || [];
+      state.providers = providers.providers || [];
+      render();
+    }
+
+    function render() {
+      renderStatus();
+      renderApps();
+      renderTokens();
+      renderProviders();
+      renderSkill();
+    }
+
+    function renderStatus() {
+      const box = $("statusPills");
+      box.replaceChildren();
+      box.appendChild(pill(state.status && state.status.has_user_ticket ? t("ticketCaptured") : t("waitingTicket"), state.status && state.status.has_user_ticket ? "ok" : "warn"));
+      box.appendChild(pill(t("tokenCount", { count: state.tokens.length }), "info"));
+      box.appendChild(pill(t("providerCount", { count: state.providers.length }), "info"));
+    }
+
+    function renderApps() {
+      const select = $("appSelect");
+      const selected = select.value;
+      select.replaceChildren();
+      if (state.apps.length === 0) {
+        const option = new Option(t("noResourceApps"), "");
+        select.appendChild(option);
+        select.disabled = true;
+        $("saveProviderBtn").disabled = true;
+        $("resourceSelect").replaceChildren();
+        $("endpointInput").value = "";
+        $("slugInput").value = "";
+        $("suggestedPath").textContent = "";
+        return;
+      }
+      select.disabled = false;
+      $("saveProviderBtn").disabled = false;
+      state.apps.forEach((app) => {
+        const suffix = app.has_mcp ? "MCP" : "Skill";
+        const option = new Option(`${app.title} · ${app.app_id} · ${suffix}`, app.app_id);
+        select.appendChild(option);
+      });
+      if (selected && state.apps.some((app) => app.app_id === selected)) {
+        select.value = selected;
+      }
+      applySelectedApp();
+    }
+
+    function applySelectedApp() {
+      const app = selectedApp();
+      if (!app) return;
+      $("slugInput").value = app.default_slug || app.app_id;
+      const resourceSelect = $("resourceSelect");
+      resourceSelect.replaceChildren();
+      if (app.mcp_providers && app.mcp_providers.length) {
+        app.mcp_providers.forEach((resource) => {
+          const option = new Option(`${resource.resource_id} · ${resource.endpoint}`, resource.resource_id);
+          option.dataset.endpoint = resource.endpoint;
+          resourceSelect.appendChild(option);
+        });
+        const preferred = app.default_mcp_resource || app.mcp_providers[0].resource_id;
+        resourceSelect.value = preferred;
+        $("endpointInput").value = app.default_endpoint || resourceSelect.selectedOptions[0].dataset.endpoint || "/mcp";
+      } else {
+        const option = new Option(t("manualInput"), "");
+        resourceSelect.appendChild(option);
+        $("endpointInput").value = "/mcp";
+      }
+      updateSuggestedPath();
+    }
+
+    function selectedApp() {
+      const appID = $("appSelect").value;
+      return state.apps.find((app) => app.app_id === appID);
+    }
+
+    function updateSuggestedPath() {
+      const slug = $("slugInput").value.trim();
+      $("suggestedPath").textContent = slug ? `/mcp/apps/${slug}` : "";
+    }
+
+    function renderTokens() {
+      $("tokenCount").textContent = String(state.tokens.length);
+      const list = $("tokenList");
+      list.replaceChildren();
+      if (state.tokens.length === 0) {
+        list.appendChild(empty(t("noTokens")));
+        return;
+      }
+      state.tokens.forEach((token) => {
+        const item = document.createElement("div");
+        item.className = "item";
+        const row = document.createElement("div");
+        row.className = "item-row";
+        const left = document.createElement("div");
+        const name = document.createElement("h3");
+        name.textContent = token.name;
+        const prefix = document.createElement("div");
+        prefix.className = "mono muted";
+        prefix.textContent = token.prefix;
+        left.append(name, prefix);
+        const actions = document.createElement("div");
+        actions.className = "actions";
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.textContent = token.enabled ? t("disable") : t("enable");
+        toggle.addEventListener("click", () => setTokenEnabled(token, !token.enabled));
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "danger";
+        del.textContent = t("delete");
+        del.addEventListener("click", () => deleteToken(token.id));
+        actions.append(toggle, del);
+        row.append(left, actions);
+        item.append(row, pill(token.enabled ? t("enabled") : t("disabled"), token.enabled ? "ok" : "warn"));
+        list.appendChild(item);
+      });
+    }
+
+    function renderProviders() {
+      $("providerCount").textContent = String(state.providers.length);
+      const list = $("providerList");
+      list.replaceChildren();
+      if (state.providers.length === 0) {
+        list.appendChild(empty(t("noProviders")));
+        return;
+      }
+      state.providers.forEach((provider) => {
+        const item = document.createElement("div");
+        item.className = "item";
+        const row = document.createElement("div");
+        row.className = "item-row";
+        const left = document.createElement("div");
+        const title = document.createElement("h3");
+        title.textContent = provider.name;
+        const path = document.createElement("div");
+        path.className = "mono";
+        path.textContent = provider.public_endpoint;
+        const upstream = document.createElement("div");
+        upstream.className = "mono muted";
+        upstream.textContent = `${provider.app_id}${provider.endpoint}`;
+        left.append(title, path, upstream);
+        const actions = document.createElement("div");
+        actions.className = "actions";
+        const copy = document.createElement("button");
+        copy.type = "button";
+        copy.textContent = t("copy");
+        copy.addEventListener("click", () => copyText(location.origin + provider.public_endpoint));
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.textContent = provider.enabled ? t("stop") : t("enable");
+        toggle.addEventListener("click", () => setProviderEnabled(provider, !provider.enabled));
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "danger";
+        del.textContent = t("delete");
+        del.addEventListener("click", () => deleteProvider(provider.id));
+        actions.append(copy, toggle, del);
+        row.append(left, actions);
+        item.append(row, pill(provider.enabled ? t("available") : t("stopped"), provider.enabled ? "ok" : "warn"));
+        list.appendChild(item);
+      });
+    }
+
+    function renderSkill() {
+      const path = state.status ? state.status.skill_install_path : "";
+      $("skillPath").textContent = path ? location.origin + path : "-";
+      $("selfMcpPath").textContent = state.status ? location.origin + state.status.mcp_endpoint : "/mcp";
+    }
+
+    function pill(text, tone) {
+      const span = document.createElement("span");
+      span.className = `pill ${tone || ""}`;
+      span.textContent = text;
+      return span;
+    }
+
+    function empty(text) {
+      const div = document.createElement("div");
+      div.className = "empty";
+      div.textContent = text;
+      return div;
+    }
+
+    async function createToken(event) {
+      event.preventDefault();
+      const name = $("tokenNameInput").value.trim() || "MCP Token";
+      const data = await api("/api/tokens", {
+        method: "POST",
+        body: JSON.stringify({ name })
+      });
+      $("tokenNameInput").value = "";
+      $("tokenOnce").style.display = "grid";
+      $("tokenValue").textContent = data.token.token;
+      await loadAll();
+    }
+
+    async function setTokenEnabled(token, enabled) {
+      await api(`/api/tokens/${token.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ enabled })
+      });
+      await loadAll();
+    }
+
+    async function deleteToken(id) {
+      await api(`/api/tokens/${id}`, { method: "DELETE", headers: {} });
+      await loadAll();
+    }
+
+    async function saveProvider(event) {
+      event.preventDefault();
+      const app = selectedApp();
+      if (!app) return;
+      const resourceOption = $("resourceSelect").selectedOptions[0];
+      const resourceID = resourceOption ? resourceOption.value : "";
+      const body = {
+        name: app.title || app.app_id,
+        slug: $("slugInput").value.trim(),
+        app_id: app.app_id,
+        app_title: app.title,
+        deploy_id: app.deploy_id || "",
+        resource_id: resourceID,
+        endpoint: $("endpointInput").value.trim(),
+        transport: "streamable_http",
+        enabled: true
+      };
+      await api("/api/providers", {
+        method: "POST",
+        body: JSON.stringify(body)
+      });
+      showToast(t("saved"));
+      await loadAll();
+    }
+
+    async function setProviderEnabled(provider, enabled) {
+      const body = {
+        name: provider.name,
+        slug: provider.slug,
+        app_id: provider.app_id,
+        app_title: provider.app_title || "",
+        deploy_id: provider.deploy_id || "",
+        resource_id: provider.resource_id || "",
+        endpoint: provider.endpoint,
+        transport: provider.transport,
+        enabled
+      };
+      await api(`/api/providers/${provider.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body)
+      });
+      await loadAll();
+    }
+
+    async function deleteProvider(id) {
+      await api(`/api/providers/${id}`, { method: "DELETE", headers: {} });
+      await loadAll();
+    }
+
+    $("appSelect").addEventListener("change", applySelectedApp);
+    $("resourceSelect").addEventListener("change", () => {
+      const option = $("resourceSelect").selectedOptions[0];
+      if (option && option.dataset.endpoint) $("endpointInput").value = option.dataset.endpoint;
+    });
+    $("slugInput").addEventListener("input", updateSuggestedPath);
+    $("providerForm").addEventListener("submit", (event) => saveProvider(event).catch((err) => showToast(err.message)));
+    $("tokenForm").addEventListener("submit", (event) => createToken(event).catch((err) => showToast(err.message)));
+    $("reloadBtn").addEventListener("click", () => loadAll().catch((err) => showToast(err.message)));
+    $("copyTokenBtn").addEventListener("click", () => copyText($("tokenValue").textContent));
+    $("copySkillBtn").addEventListener("click", () => copyText($("skillPath").textContent));
+    document.querySelectorAll("[data-lang-option]").forEach((button) => {
+      button.addEventListener("click", () => setLanguage(button.dataset.langOption));
+    });
+
+    setLanguage(currentLang, false);
+    loadAll().catch((err) => showToast(err.message));
+  </script>
+</body>
+</html>

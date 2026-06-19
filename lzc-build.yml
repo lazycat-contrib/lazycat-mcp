@@ -12,3 +12,9 @@ pkgout: ./
 # icon 指定 lpk 包 icon 的路径，如果不指定将会警告
 # icon 仅仅允许 png 后缀的文件
 icon: ./icon.png
+
+resource_exports:
+  - kind: skills
+    source: ./resources/skills
+  - kind: mcp-providers
+    source: ./resources/mcp-providers

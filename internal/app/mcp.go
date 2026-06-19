@@ -1,0 +1,58 @@
+package app
+
+import (
+	"context"
+	"encoding/json"
+
+	"github.com/mark3labs/mcp-go/mcp"
+	mcpserver "github.com/mark3labs/mcp-go/server"
+)
+
+const appVersion = "1.0.0"
+
+func (a *App) newMCPServer() *mcpserver.MCPServer {
+	svr := mcpserver.NewMCPServer(
+		"LazyCat MCP",
+		appVersion,
+		mcpserver.WithLogging(),
+		mcpserver.WithRecovery(),
+		mcpserver.WithToolCapabilities(true),
+		mcpserver.WithResourceCapabilities(true, true),
+	)
+
+	tools := []mcpserver.ServerTool{a.providerListTool()}
+	tools = append(tools, a.kit.DomainKits()...)
+	if a.kit.Available() {
+		tools = append(tools, a.kit.PowerKits()...)
+		tools = append(tools, a.kit.DeviceKits()...)
+	}
+	svr.AddTools(tools...)
+	return svr
+}
+
+func (a *App) providerListTool() mcpserver.ServerTool {
+	return mcpserver.ServerTool{
+		Tool: mcp.NewTool("lazycat_mcp_provider_list",
+			mcp.WithDescription("List LazyCat MCP gateway providers available through this program."),
+		),
+		Handler: func(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			providers, err := a.providers.Enabled(ctx)
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+			payload := map[string]any{
+				"local": map[string]any{
+					"app_id":   selfPackageID,
+					"name":     "LazyCat MCP",
+					"endpoint": "/mcp",
+				},
+				"providers": providers,
+			}
+			data, err := json.Marshal(payload)
+			if err != nil {
+				return mcp.NewToolResultError(err.Error()), nil
+			}
+			return mcp.NewToolResultText(string(data)), nil
+		},
+	}
+}

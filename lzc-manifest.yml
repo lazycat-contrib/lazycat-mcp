@@ -1,28 +1,16 @@
 application:
   subdomain: lazycat-mcp
   background_task: true
-  multi_instance: false
+  multi_instance: true
   gpu_accel: false
   kvm_accel: false
   usb_accel: false
-  injects:
-    - id: custom-404-page
-      on: response
-      auth_required: false
-      when:
-        - "/*"
-      do: |
-        if (ctx.status === 404) {
-          ctx.response.send(302, "", { location: "/help" });
-          return;
-        }
   public_path:
-    - /
-    - /help
+    - /mcp
+    - /mcp/*
+    - /sse
+    - /message
   upstreams:
     - location: /
       backend: http://127.0.0.1:3000/
       backend_launch_command: /lzcapp/pkg/content/lazycat-mcp
-
-    - location: /help
-      backend: file:///lzcapp/pkg/content/help.html
