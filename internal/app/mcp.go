@@ -6,14 +6,15 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
+
+	"lazycat-mcp/internal/buildinfo"
 )
 
-const appVersion = "1.0.0"
-
 func (a *App) newMCPServer() *mcpserver.MCPServer {
+	info := buildinfo.Snapshot()
 	svr := mcpserver.NewMCPServer(
 		"LazyCat MCP",
-		appVersion,
+		info.Version,
 		mcpserver.WithLogging(),
 		mcpserver.WithRecovery(),
 		mcpserver.WithToolCapabilities(true),

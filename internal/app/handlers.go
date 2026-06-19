@@ -13,6 +13,8 @@ import (
 
 	"gitee.com/linakesi/lzc-sdk/lang/go/sys"
 	"google.golang.org/grpc/metadata"
+
+	"lazycat-mcp/internal/buildinfo"
 )
 
 type appOption struct {
@@ -61,6 +63,7 @@ func (a *App) handleAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) handleStatus(w http.ResponseWriter, r *http.Request) {
+	build := buildinfo.Snapshot()
 	hasTicket := false
 	if _, ok := a.tickets.Get(); ok {
 		hasTicket = true
@@ -72,6 +75,9 @@ func (a *App) handleStatus(w http.ResponseWriter, r *http.Request) {
 		"resource_root":      a.resources.Root(),
 		"mcp_endpoint":       "/mcp",
 		"skill_install_path": SelfSkillInstallPath(),
+		"version":            build.Version,
+		"commit":             build.Commit,
+		"build_time":         build.BuildTime,
 		"has_user_ticket":    hasTicket,
 		"user_ticket_seen":   a.tickets.UpdatedAt(),
 		"token_count":        tokenCount,

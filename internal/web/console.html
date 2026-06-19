@@ -30,8 +30,8 @@
         <section class="panel" aria-labelledby="providerTitle">
           <div class="panel-head">
             <div>
-              <h2 id="providerTitle" data-i18n="programMcp">程序 MCP</h2>
-              <p class="muted" data-i18n="resourceFilteredApps">资源目录筛选后的程序</p>
+              <h2 id="providerTitle" data-i18n="programMcp">添加 MCP 上游</h2>
+              <p class="muted" data-i18n="resourceFilteredApps">选择懒猫应用或添加外部 MCP 服务</p>
             </div>
             <button class="ghost" id="reloadBtn" type="button" data-i18n="refresh">刷新</button>
           </div>
@@ -39,7 +39,7 @@
             <form id="providerForm" class="form-grid">
               <div class="mode-tabs span-2" role="tablist" data-i18n-aria="providerType">
                 <button type="button" id="lazycatModeBtn" role="tab" aria-controls="lazycatFields" data-provider-mode="lazycat" data-i18n="lazycatApp">懒猫应用</button>
-                <button type="button" id="customModeBtn" role="tab" aria-controls="customFields" data-provider-mode="custom" data-i18n="customMcp">自定义 MCP</button>
+                <button type="button" id="customModeBtn" role="tab" aria-controls="customFields" data-provider-mode="custom" data-i18n="customMcp">添加自定义 MCP</button>
               </div>
               <div id="lazycatFields" class="form-section span-2">
                 <label class="span-2"><span data-i18n="app">程序</span>
@@ -141,6 +141,7 @@
             <div class="item">
               <h3 data-i18n="selfMcp">本程序 MCP</h3>
               <div class="mono" id="selfMcpPath">/mcp</div>
+              <div class="mono muted" id="buildInfo">-</div>
               <span class="pill warn">Token</span>
             </div>
           </div>
@@ -157,12 +158,12 @@
         title: "懒猫 MCP",
         subtitle: "多实例 MCP 网关",
         language: "语言",
-        programMcp: "程序 MCP",
-        resourceFilteredApps: "资源目录筛选后的程序",
+        programMcp: "添加 MCP 上游",
+        resourceFilteredApps: "选择懒猫应用或添加外部 MCP 服务",
         refresh: "刷新",
         providerType: "MCP 类型",
         lazycatApp: "懒猫应用",
-        customMcp: "自定义 MCP",
+        customMcp: "添加自定义 MCP",
         app: "程序",
         appSubpath: "程序子路径",
         customSubpath: "公开路径",
@@ -191,6 +192,9 @@
         waitingTicket: "等待用户票据",
         tokenCount: "Token {count}",
         providerCount: "Provider {count}",
+        versionLabel: "版本 {version}",
+        buildTime: "构建",
+        commit: "提交",
         noResourceApps: "未发现带资源的程序",
         manualInput: "手动输入",
         noTokens: "还没有 Token",
@@ -213,12 +217,12 @@
         title: "LazyCat MCP",
         subtitle: "Multi-instance MCP gateway",
         language: "Language",
-        programMcp: "App MCP",
-        resourceFilteredApps: "Apps filtered by resource exports",
+        programMcp: "Add MCP upstream",
+        resourceFilteredApps: "Choose a LazyCat app or add an external MCP service",
         refresh: "Refresh",
         providerType: "MCP type",
         lazycatApp: "LazyCat app",
-        customMcp: "Custom MCP",
+        customMcp: "Add custom MCP",
         app: "App",
         appSubpath: "App subpath",
         customSubpath: "Public path",
@@ -247,6 +251,9 @@
         waitingTicket: "Waiting for user ticket",
         tokenCount: "Token {count}",
         providerCount: "Provider {count}",
+        versionLabel: "Version {version}",
+        buildTime: "Build",
+        commit: "Commit",
         noResourceApps: "No apps with resources found",
         manualInput: "Manual input",
         noTokens: "No tokens yet",
@@ -394,6 +401,7 @@
       } else {
         updateSuggestedPath();
       }
+      updateProviderSubmitState();
     }
 
     function setProviderMode(mode) {
@@ -411,6 +419,9 @@
       const box = $("statusPills");
       box.replaceChildren();
       box.appendChild(pill(state.status && state.status.has_user_ticket ? t("ticketCaptured") : t("waitingTicket"), state.status && state.status.has_user_ticket ? "ok" : "warn"));
+      if (state.status && state.status.version) {
+        box.appendChild(pill(t("versionLabel", { version: state.status.version }), "info"));
+      }
       box.appendChild(pill(t("tokenCount", { count: state.tokens.length }), "info"));
       box.appendChild(pill(t("providerCount", { count: state.providers.length }), "info"));
     }
@@ -423,7 +434,7 @@
         const option = new Option(t("noResourceApps"), "");
         select.appendChild(option);
         select.disabled = true;
-        $("saveProviderBtn").disabled = state.providerMode !== "custom";
+        updateProviderSubmitState();
         $("resourceSelect").replaceChildren();
         $("endpointInput").value = "";
         $("slugInput").value = "";
@@ -431,7 +442,7 @@
         return;
       }
       select.disabled = false;
-      $("saveProviderBtn").disabled = false;
+      updateProviderSubmitState();
       state.apps.forEach((app) => {
         const suffix = app.has_mcp ? "MCP" : "Skill";
         const option = new Option(`${app.title} · ${app.app_id} · ${suffix}`, app.app_id);
@@ -570,6 +581,32 @@
       const path = state.status ? state.status.skill_install_path : "";
       $("skillPath").textContent = path ? location.origin + path : "-";
       $("selfMcpPath").textContent = state.status ? location.origin + state.status.mcp_endpoint : "/mcp";
+      $("buildInfo").textContent = state.status ? formatBuildInfo(state.status) : "-";
+    }
+
+    function updateProviderSubmitState() {
+      $("saveProviderBtn").disabled = state.providerMode !== "custom" && state.apps.length === 0;
+    }
+
+    function formatBuildInfo(status) {
+      const buildTime = status.build_time || "unknown";
+      const commit = status.commit || "unknown";
+      return `${t("buildTime")}: ${formatBuildTime(buildTime)} · ${t("commit")}: ${commit}`;
+    }
+
+    function formatBuildTime(value) {
+      if (!value || value === "unknown") return value || "unknown";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleString(currentLang === "zh" ? "zh-CN" : "en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      });
     }
 
     function pill(text, tone) {
