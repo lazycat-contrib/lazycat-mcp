@@ -37,18 +37,54 @@
           </div>
           <div class="panel-body">
             <form id="providerForm" class="form-grid">
-              <label class="span-2"><span data-i18n="app">程序</span>
-                <select id="appSelect" required></select>
-              </label>
-              <label><span data-i18n="appSubpath">程序子路径</span>
-                <input id="slugInput" autocomplete="off" required>
-              </label>
-              <label><span data-i18n="resourceProvider">资源 Provider</span>
-                <select id="resourceSelect"></select>
-              </label>
-              <label class="span-2"><span data-i18n="programMcpPath">程序 MCP 路径</span>
-                <input id="endpointInput" autocomplete="off" required>
-              </label>
+              <div class="mode-tabs span-2" role="tablist" data-i18n-aria="providerType">
+                <button type="button" id="lazycatModeBtn" role="tab" aria-controls="lazycatFields" data-provider-mode="lazycat" data-i18n="lazycatApp">懒猫应用</button>
+                <button type="button" id="customModeBtn" role="tab" aria-controls="customFields" data-provider-mode="custom" data-i18n="customMcp">自定义 MCP</button>
+              </div>
+              <div id="lazycatFields" class="form-section span-2">
+                <label class="span-2"><span data-i18n="app">程序</span>
+                  <select id="appSelect" required></select>
+                </label>
+                <label><span data-i18n="appSubpath">程序子路径</span>
+                  <input id="slugInput" autocomplete="off" required>
+                </label>
+                <label><span data-i18n="resourceProvider">资源 Provider</span>
+                  <select id="resourceSelect"></select>
+                </label>
+                <label class="span-2"><span data-i18n="programMcpPath">程序 MCP 路径</span>
+                  <input id="endpointInput" autocomplete="off" required>
+                </label>
+              </div>
+              <div id="customFields" class="form-section span-2" hidden>
+                <label><span data-i18n="providerName">名称</span>
+                  <input id="customNameInput" autocomplete="off" placeholder="Context7" required disabled>
+                </label>
+                <label><span data-i18n="customSubpath">公开路径</span>
+                  <input id="customSlugInput" autocomplete="off" placeholder="context7" required disabled>
+                </label>
+                <label class="span-2"><span data-i18n="description">说明</span>
+                  <input id="customDescriptionInput" autocomplete="off" data-i18n-placeholder="optional" placeholder="选填" disabled>
+                </label>
+                <label class="span-2"><span data-i18n="serviceURL">服务地址</span>
+                  <input id="customBaseURLInput" autocomplete="off" inputmode="url" placeholder="https://example.com" required disabled>
+                </label>
+                <label><span data-i18n="mcpPath">MCP 路径</span>
+                  <input id="customEndpointInput" autocomplete="off" value="/mcp" required disabled>
+                </label>
+                <label><span data-i18n="transport">传输方式</span>
+                  <select id="customTransportSelect" required disabled>
+                    <option value="streamable_http">Streamable HTTP</option>
+                    <option value="sse">SSE</option>
+                  </select>
+                </label>
+                <div class="header-editor span-2">
+                  <div class="field-head">
+                    <span data-i18n="headers">请求头</span>
+                    <button type="button" class="ghost compact" id="addHeaderBtn" data-i18n="addHeader" disabled>添加</button>
+                  </div>
+                  <div id="headerRows" class="header-rows"></div>
+                </div>
+              </div>
               <div class="actions span-2">
                 <button class="primary" id="saveProviderBtn" type="submit" data-i18n="save">保存</button>
                 <span class="muted mono" id="suggestedPath"></span>
@@ -124,10 +160,25 @@
         programMcp: "程序 MCP",
         resourceFilteredApps: "资源目录筛选后的程序",
         refresh: "刷新",
+        providerType: "MCP 类型",
+        lazycatApp: "懒猫应用",
+        customMcp: "自定义 MCP",
         app: "程序",
         appSubpath: "程序子路径",
+        customSubpath: "公开路径",
         resourceProvider: "资源 Provider",
         programMcpPath: "程序 MCP 路径",
+        providerName: "名称",
+        description: "说明",
+        optional: "选填",
+        serviceURL: "服务地址",
+        mcpPath: "MCP 路径",
+        transport: "传输方式",
+        headers: "请求头",
+        addHeader: "添加",
+        headerName: "请求头",
+        headerValue: "值",
+        removeHeader: "删除请求头",
         save: "保存",
         publishedUpstreams: "已发布上游",
         tokenName: "Token 名称",
@@ -152,6 +203,8 @@
         stop: "停用",
         available: "可用",
         stopped: "停用",
+        upstreamCustom: "自定义",
+        upstreamLazycat: "懒猫",
         copied: "已复制",
         copyFailed: "复制失败",
         saved: "已保存"
@@ -163,10 +216,25 @@
         programMcp: "App MCP",
         resourceFilteredApps: "Apps filtered by resource exports",
         refresh: "Refresh",
+        providerType: "MCP type",
+        lazycatApp: "LazyCat app",
+        customMcp: "Custom MCP",
         app: "App",
         appSubpath: "App subpath",
+        customSubpath: "Public path",
         resourceProvider: "Resource Provider",
         programMcpPath: "App MCP path",
+        providerName: "Name",
+        description: "Description",
+        optional: "Optional",
+        serviceURL: "Service URL",
+        mcpPath: "MCP path",
+        transport: "Transport",
+        headers: "Headers",
+        addHeader: "Add",
+        headerName: "Header",
+        headerValue: "Value",
+        removeHeader: "Remove header",
         save: "Save",
         publishedUpstreams: "Published Upstreams",
         tokenName: "Token name",
@@ -191,6 +259,8 @@
         stop: "Stop",
         available: "Available",
         stopped: "Stopped",
+        upstreamCustom: "Custom",
+        upstreamLazycat: "LazyCat",
         copied: "Copied",
         copyFailed: "Copy failed",
         saved: "Saved"
@@ -201,7 +271,8 @@
       status: null,
       apps: [],
       tokens: [],
-      providers: []
+      providers: [],
+      providerMode: "lazycat"
     };
 
     const $ = (id) => document.getElementById(id);
@@ -241,6 +312,17 @@
         const active = button.dataset.langOption === currentLang;
         button.classList.toggle("active", active);
         button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+      updateHeaderRowI18n();
+    }
+
+    function updateHeaderRowI18n() {
+      document.querySelectorAll("#headerRows .header-row").forEach((row) => {
+        const inputs = row.querySelectorAll("input");
+        if (inputs[0]) inputs[0].placeholder = t("headerName");
+        if (inputs[1]) inputs[1].placeholder = t("headerValue");
+        const button = row.querySelector("button");
+        if (button) button.setAttribute("aria-label", t("removeHeader"));
       });
     }
 
@@ -288,10 +370,41 @@
 
     function render() {
       renderStatus();
+      renderProviderMode();
       renderApps();
       renderTokens();
       renderProviders();
       renderSkill();
+    }
+
+    function renderProviderMode() {
+      const isCustom = state.providerMode === "custom";
+      $("lazycatFields").hidden = isCustom;
+      $("customFields").hidden = !isCustom;
+      document.querySelectorAll("[data-provider-mode]").forEach((button) => {
+        const active = button.dataset.providerMode === state.providerMode;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", active ? "true" : "false");
+        button.setAttribute("tabindex", active ? "0" : "-1");
+      });
+      setGroupDisabled("lazycatFields", isCustom);
+      setGroupDisabled("customFields", !isCustom);
+      if (isCustom) {
+        updateCustomSuggestedPath();
+      } else {
+        updateSuggestedPath();
+      }
+    }
+
+    function setProviderMode(mode) {
+      state.providerMode = mode === "custom" ? "custom" : "lazycat";
+      renderProviderMode();
+    }
+
+    function setGroupDisabled(id, disabled) {
+      document.querySelectorAll(`#${id} input, #${id} select, #${id} button`).forEach((node) => {
+        node.disabled = disabled;
+      });
     }
 
     function renderStatus() {
@@ -310,7 +423,7 @@
         const option = new Option(t("noResourceApps"), "");
         select.appendChild(option);
         select.disabled = true;
-        $("saveProviderBtn").disabled = true;
+        $("saveProviderBtn").disabled = state.providerMode !== "custom";
         $("resourceSelect").replaceChildren();
         $("endpointInput").value = "";
         $("slugInput").value = "";
@@ -360,6 +473,11 @@
 
     function updateSuggestedPath() {
       const slug = $("slugInput").value.trim();
+      $("suggestedPath").textContent = slug ? `/mcp/apps/${slug}` : "";
+    }
+
+    function updateCustomSuggestedPath() {
+      const slug = $("customSlugInput").value.trim();
       $("suggestedPath").textContent = slug ? `/mcp/apps/${slug}` : "";
     }
 
@@ -422,7 +540,9 @@
         path.textContent = provider.public_endpoint;
         const upstream = document.createElement("div");
         upstream.className = "mono muted";
-        upstream.textContent = `${provider.app_id}${provider.endpoint}`;
+        upstream.textContent = provider.type === "custom"
+          ? `${provider.base_url || ""}${provider.endpoint}${provider.header_count ? ` · ${provider.header_count} headers` : ""}`
+          : `${provider.app_id}${provider.endpoint}`;
         left.append(title, path, upstream);
         const actions = document.createElement("div");
         actions.className = "actions";
@@ -441,7 +561,7 @@
         del.addEventListener("click", () => deleteProvider(provider.id));
         actions.append(copy, toggle, del);
         row.append(left, actions);
-        item.append(row, pill(provider.enabled ? t("available") : t("stopped"), provider.enabled ? "ok" : "warn"));
+        item.append(row, pill(provider.type === "custom" ? t("upstreamCustom") : t("upstreamLazycat"), "info"), pill(provider.enabled ? t("available") : t("stopped"), provider.enabled ? "ok" : "warn"));
         list.appendChild(item);
       });
     }
@@ -464,6 +584,37 @@
       div.className = "empty";
       div.textContent = text;
       return div;
+    }
+
+    function addHeaderRow(name = "", value = "") {
+      const row = document.createElement("div");
+      row.className = "header-row";
+      const nameInput = document.createElement("input");
+      nameInput.placeholder = t("headerName");
+      nameInput.autocomplete = "off";
+      nameInput.value = name;
+      const valueInput = document.createElement("input");
+      valueInput.placeholder = t("headerValue");
+      valueInput.autocomplete = "off";
+      valueInput.value = value;
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "danger compact";
+      remove.textContent = "x";
+      remove.setAttribute("aria-label", t("removeHeader"));
+      remove.addEventListener("click", () => row.remove());
+      row.append(nameInput, valueInput, remove);
+      $("headerRows").appendChild(row);
+    }
+
+    function readHeaderRows() {
+      return Array.from(document.querySelectorAll("#headerRows .header-row")).map((row) => {
+        const inputs = row.querySelectorAll("input");
+        return {
+          name: inputs[0].value.trim(),
+          value: inputs[1].value.trim()
+        };
+      }).filter((header) => header.name || header.value);
     }
 
     async function createToken(event) {
@@ -494,11 +645,15 @@
 
     async function saveProvider(event) {
       event.preventDefault();
+      if (state.providerMode === "custom") {
+        return saveCustomProvider();
+      }
       const app = selectedApp();
       if (!app) return;
       const resourceOption = $("resourceSelect").selectedOptions[0];
       const resourceID = resourceOption ? resourceOption.value : "";
       const body = {
+        type: "lazycat",
         name: app.title || app.app_id,
         slug: $("slugInput").value.trim(),
         app_id: app.app_id,
@@ -517,21 +672,38 @@
       await loadAll();
     }
 
-    async function setProviderEnabled(provider, enabled) {
+    async function saveCustomProvider() {
       const body = {
-        name: provider.name,
-        slug: provider.slug,
-        app_id: provider.app_id,
-        app_title: provider.app_title || "",
-        deploy_id: provider.deploy_id || "",
-        resource_id: provider.resource_id || "",
-        endpoint: provider.endpoint,
-        transport: provider.transport,
-        enabled
+        type: "custom",
+        name: $("customNameInput").value.trim(),
+        description: $("customDescriptionInput").value.trim(),
+        slug: $("customSlugInput").value.trim(),
+        base_url: $("customBaseURLInput").value.trim(),
+        endpoint: $("customEndpointInput").value.trim(),
+        transport: $("customTransportSelect").value,
+        headers: readHeaderRows(),
+        enabled: true
       };
+      await api("/api/providers", {
+        method: "POST",
+        body: JSON.stringify(body)
+      });
+      $("customNameInput").value = "";
+      $("customDescriptionInput").value = "";
+      $("customSlugInput").value = "";
+      $("customBaseURLInput").value = "";
+      $("customEndpointInput").value = "/mcp";
+      $("customTransportSelect").value = "streamable_http";
+      $("headerRows").replaceChildren();
+      updateCustomSuggestedPath();
+      showToast(t("saved"));
+      await loadAll();
+    }
+
+    async function setProviderEnabled(provider, enabled) {
       await api(`/api/providers/${provider.id}`, {
         method: "PATCH",
-        body: JSON.stringify(body)
+        body: JSON.stringify({ enabled })
       });
       await loadAll();
     }
@@ -547,6 +719,11 @@
       if (option && option.dataset.endpoint) $("endpointInput").value = option.dataset.endpoint;
     });
     $("slugInput").addEventListener("input", updateSuggestedPath);
+    $("customSlugInput").addEventListener("input", updateCustomSuggestedPath);
+    $("addHeaderBtn").addEventListener("click", () => addHeaderRow());
+    document.querySelectorAll("[data-provider-mode]").forEach((button) => {
+      button.addEventListener("click", () => setProviderMode(button.dataset.providerMode));
+    });
     $("providerForm").addEventListener("submit", (event) => saveProvider(event).catch((err) => showToast(err.message)));
     $("tokenForm").addEventListener("submit", (event) => createToken(event).catch((err) => showToast(err.message)));
     $("reloadBtn").addEventListener("click", () => loadAll().catch((err) => showToast(err.message)));

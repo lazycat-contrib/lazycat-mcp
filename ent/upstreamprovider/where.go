@@ -59,6 +59,11 @@ func Name(v string) predicate.UpstreamProvider {
 	return predicate.UpstreamProvider(sql.FieldEQ(FieldName, v))
 }
 
+// Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
+func Description(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldEQ(FieldDescription, v))
+}
+
 // Slug applies equality check predicate on the "slug" field. It's identical to SlugEQ.
 func Slug(v string) predicate.UpstreamProvider {
 	return predicate.UpstreamProvider(sql.FieldEQ(FieldSlug, v))
@@ -84,9 +89,19 @@ func ResourceID(v string) predicate.UpstreamProvider {
 	return predicate.UpstreamProvider(sql.FieldEQ(FieldResourceID, v))
 }
 
+// BaseURL applies equality check predicate on the "base_url" field. It's identical to BaseURLEQ.
+func BaseURL(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldEQ(FieldBaseURL, v))
+}
+
 // Endpoint applies equality check predicate on the "endpoint" field. It's identical to EndpointEQ.
 func Endpoint(v string) predicate.UpstreamProvider {
 	return predicate.UpstreamProvider(sql.FieldEQ(FieldEndpoint, v))
+}
+
+// Headers applies equality check predicate on the "headers" field. It's identical to HeadersEQ.
+func Headers(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldEQ(FieldHeaders, v))
 }
 
 // Enabled applies equality check predicate on the "enabled" field. It's identical to EnabledEQ.
@@ -174,6 +189,81 @@ func NameContainsFold(v string) predicate.UpstreamProvider {
 	return predicate.UpstreamProvider(sql.FieldContainsFold(FieldName, v))
 }
 
+// DescriptionEQ applies the EQ predicate on the "description" field.
+func DescriptionEQ(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldEQ(FieldDescription, v))
+}
+
+// DescriptionNEQ applies the NEQ predicate on the "description" field.
+func DescriptionNEQ(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldNEQ(FieldDescription, v))
+}
+
+// DescriptionIn applies the In predicate on the "description" field.
+func DescriptionIn(vs ...string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldIn(FieldDescription, vs...))
+}
+
+// DescriptionNotIn applies the NotIn predicate on the "description" field.
+func DescriptionNotIn(vs ...string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldNotIn(FieldDescription, vs...))
+}
+
+// DescriptionGT applies the GT predicate on the "description" field.
+func DescriptionGT(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldGT(FieldDescription, v))
+}
+
+// DescriptionGTE applies the GTE predicate on the "description" field.
+func DescriptionGTE(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldGTE(FieldDescription, v))
+}
+
+// DescriptionLT applies the LT predicate on the "description" field.
+func DescriptionLT(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldLT(FieldDescription, v))
+}
+
+// DescriptionLTE applies the LTE predicate on the "description" field.
+func DescriptionLTE(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldLTE(FieldDescription, v))
+}
+
+// DescriptionContains applies the Contains predicate on the "description" field.
+func DescriptionContains(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldContains(FieldDescription, v))
+}
+
+// DescriptionHasPrefix applies the HasPrefix predicate on the "description" field.
+func DescriptionHasPrefix(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldHasPrefix(FieldDescription, v))
+}
+
+// DescriptionHasSuffix applies the HasSuffix predicate on the "description" field.
+func DescriptionHasSuffix(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldHasSuffix(FieldDescription, v))
+}
+
+// DescriptionIsNil applies the IsNil predicate on the "description" field.
+func DescriptionIsNil() predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldIsNull(FieldDescription))
+}
+
+// DescriptionNotNil applies the NotNil predicate on the "description" field.
+func DescriptionNotNil() predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldNotNull(FieldDescription))
+}
+
+// DescriptionEqualFold applies the EqualFold predicate on the "description" field.
+func DescriptionEqualFold(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldEqualFold(FieldDescription, v))
+}
+
+// DescriptionContainsFold applies the ContainsFold predicate on the "description" field.
+func DescriptionContainsFold(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldContainsFold(FieldDescription, v))
+}
+
 // SlugEQ applies the EQ predicate on the "slug" field.
 func SlugEQ(v string) predicate.UpstreamProvider {
 	return predicate.UpstreamProvider(sql.FieldEQ(FieldSlug, v))
@@ -237,6 +327,26 @@ func SlugEqualFold(v string) predicate.UpstreamProvider {
 // SlugContainsFold applies the ContainsFold predicate on the "slug" field.
 func SlugContainsFold(v string) predicate.UpstreamProvider {
 	return predicate.UpstreamProvider(sql.FieldContainsFold(FieldSlug, v))
+}
+
+// ProviderTypeEQ applies the EQ predicate on the "provider_type" field.
+func ProviderTypeEQ(v ProviderType) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldEQ(FieldProviderType, v))
+}
+
+// ProviderTypeNEQ applies the NEQ predicate on the "provider_type" field.
+func ProviderTypeNEQ(v ProviderType) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldNEQ(FieldProviderType, v))
+}
+
+// ProviderTypeIn applies the In predicate on the "provider_type" field.
+func ProviderTypeIn(vs ...ProviderType) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldIn(FieldProviderType, vs...))
+}
+
+// ProviderTypeNotIn applies the NotIn predicate on the "provider_type" field.
+func ProviderTypeNotIn(vs ...ProviderType) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldNotIn(FieldProviderType, vs...))
 }
 
 // AppIDEQ applies the EQ predicate on the "app_id" field.
@@ -529,6 +639,81 @@ func ResourceIDContainsFold(v string) predicate.UpstreamProvider {
 	return predicate.UpstreamProvider(sql.FieldContainsFold(FieldResourceID, v))
 }
 
+// BaseURLEQ applies the EQ predicate on the "base_url" field.
+func BaseURLEQ(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldEQ(FieldBaseURL, v))
+}
+
+// BaseURLNEQ applies the NEQ predicate on the "base_url" field.
+func BaseURLNEQ(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldNEQ(FieldBaseURL, v))
+}
+
+// BaseURLIn applies the In predicate on the "base_url" field.
+func BaseURLIn(vs ...string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldIn(FieldBaseURL, vs...))
+}
+
+// BaseURLNotIn applies the NotIn predicate on the "base_url" field.
+func BaseURLNotIn(vs ...string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldNotIn(FieldBaseURL, vs...))
+}
+
+// BaseURLGT applies the GT predicate on the "base_url" field.
+func BaseURLGT(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldGT(FieldBaseURL, v))
+}
+
+// BaseURLGTE applies the GTE predicate on the "base_url" field.
+func BaseURLGTE(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldGTE(FieldBaseURL, v))
+}
+
+// BaseURLLT applies the LT predicate on the "base_url" field.
+func BaseURLLT(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldLT(FieldBaseURL, v))
+}
+
+// BaseURLLTE applies the LTE predicate on the "base_url" field.
+func BaseURLLTE(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldLTE(FieldBaseURL, v))
+}
+
+// BaseURLContains applies the Contains predicate on the "base_url" field.
+func BaseURLContains(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldContains(FieldBaseURL, v))
+}
+
+// BaseURLHasPrefix applies the HasPrefix predicate on the "base_url" field.
+func BaseURLHasPrefix(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldHasPrefix(FieldBaseURL, v))
+}
+
+// BaseURLHasSuffix applies the HasSuffix predicate on the "base_url" field.
+func BaseURLHasSuffix(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldHasSuffix(FieldBaseURL, v))
+}
+
+// BaseURLIsNil applies the IsNil predicate on the "base_url" field.
+func BaseURLIsNil() predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldIsNull(FieldBaseURL))
+}
+
+// BaseURLNotNil applies the NotNil predicate on the "base_url" field.
+func BaseURLNotNil() predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldNotNull(FieldBaseURL))
+}
+
+// BaseURLEqualFold applies the EqualFold predicate on the "base_url" field.
+func BaseURLEqualFold(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldEqualFold(FieldBaseURL, v))
+}
+
+// BaseURLContainsFold applies the ContainsFold predicate on the "base_url" field.
+func BaseURLContainsFold(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldContainsFold(FieldBaseURL, v))
+}
+
 // EndpointEQ applies the EQ predicate on the "endpoint" field.
 func EndpointEQ(v string) predicate.UpstreamProvider {
 	return predicate.UpstreamProvider(sql.FieldEQ(FieldEndpoint, v))
@@ -592,6 +777,71 @@ func EndpointEqualFold(v string) predicate.UpstreamProvider {
 // EndpointContainsFold applies the ContainsFold predicate on the "endpoint" field.
 func EndpointContainsFold(v string) predicate.UpstreamProvider {
 	return predicate.UpstreamProvider(sql.FieldContainsFold(FieldEndpoint, v))
+}
+
+// HeadersEQ applies the EQ predicate on the "headers" field.
+func HeadersEQ(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldEQ(FieldHeaders, v))
+}
+
+// HeadersNEQ applies the NEQ predicate on the "headers" field.
+func HeadersNEQ(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldNEQ(FieldHeaders, v))
+}
+
+// HeadersIn applies the In predicate on the "headers" field.
+func HeadersIn(vs ...string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldIn(FieldHeaders, vs...))
+}
+
+// HeadersNotIn applies the NotIn predicate on the "headers" field.
+func HeadersNotIn(vs ...string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldNotIn(FieldHeaders, vs...))
+}
+
+// HeadersGT applies the GT predicate on the "headers" field.
+func HeadersGT(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldGT(FieldHeaders, v))
+}
+
+// HeadersGTE applies the GTE predicate on the "headers" field.
+func HeadersGTE(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldGTE(FieldHeaders, v))
+}
+
+// HeadersLT applies the LT predicate on the "headers" field.
+func HeadersLT(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldLT(FieldHeaders, v))
+}
+
+// HeadersLTE applies the LTE predicate on the "headers" field.
+func HeadersLTE(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldLTE(FieldHeaders, v))
+}
+
+// HeadersContains applies the Contains predicate on the "headers" field.
+func HeadersContains(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldContains(FieldHeaders, v))
+}
+
+// HeadersHasPrefix applies the HasPrefix predicate on the "headers" field.
+func HeadersHasPrefix(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldHasPrefix(FieldHeaders, v))
+}
+
+// HeadersHasSuffix applies the HasSuffix predicate on the "headers" field.
+func HeadersHasSuffix(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldHasSuffix(FieldHeaders, v))
+}
+
+// HeadersEqualFold applies the EqualFold predicate on the "headers" field.
+func HeadersEqualFold(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldEqualFold(FieldHeaders, v))
+}
+
+// HeadersContainsFold applies the ContainsFold predicate on the "headers" field.
+func HeadersContainsFold(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldContainsFold(FieldHeaders, v))
 }
 
 // TransportEQ applies the EQ predicate on the "transport" field.

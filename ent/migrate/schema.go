@@ -42,12 +42,16 @@ var (
 	UpstreamProvidersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Size: 120},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 300},
 		{Name: "slug", Type: field.TypeString, Unique: true, Size: 180},
-		{Name: "app_id", Type: field.TypeString, Size: 180},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"lazycat", "custom"}, Default: "lazycat"},
+		{Name: "app_id", Type: field.TypeString, Size: 180, Default: ""},
 		{Name: "deploy_id", Type: field.TypeString, Nullable: true, Size: 180},
 		{Name: "app_title", Type: field.TypeString, Nullable: true, Size: 180},
 		{Name: "resource_id", Type: field.TypeString, Nullable: true, Size: 80},
+		{Name: "base_url", Type: field.TypeString, Nullable: true, Size: 2048},
 		{Name: "endpoint", Type: field.TypeString, Size: 240, Default: "/mcp"},
+		{Name: "headers", Type: field.TypeString, Size: 2147483647, Default: "[]"},
 		{Name: "transport", Type: field.TypeEnum, Enums: []string{"streamable_http", "sse"}, Default: "streamable_http"},
 		{Name: "enabled", Type: field.TypeBool, Default: true},
 		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
@@ -63,17 +67,22 @@ var (
 			{
 				Name:    "upstreamprovider_slug",
 				Unique:  true,
-				Columns: []*schema.Column{UpstreamProvidersColumns[2]},
+				Columns: []*schema.Column{UpstreamProvidersColumns[3]},
+			},
+			{
+				Name:    "upstreamprovider_type",
+				Unique:  false,
+				Columns: []*schema.Column{UpstreamProvidersColumns[4]},
 			},
 			{
 				Name:    "upstreamprovider_app_id",
 				Unique:  false,
-				Columns: []*schema.Column{UpstreamProvidersColumns[3]},
+				Columns: []*schema.Column{UpstreamProvidersColumns[5]},
 			},
 			{
 				Name:    "upstreamprovider_enabled",
 				Unique:  false,
-				Columns: []*schema.Column{UpstreamProvidersColumns[9]},
+				Columns: []*schema.Column{UpstreamProvidersColumns[13]},
 			},
 		},
 	}

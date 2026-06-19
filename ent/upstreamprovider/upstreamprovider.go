@@ -16,8 +16,12 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// FieldSlug holds the string denoting the slug field in the database.
 	FieldSlug = "slug"
+	// FieldProviderType holds the string denoting the provider_type field in the database.
+	FieldProviderType = "type"
 	// FieldAppID holds the string denoting the app_id field in the database.
 	FieldAppID = "app_id"
 	// FieldDeployID holds the string denoting the deploy_id field in the database.
@@ -26,8 +30,12 @@ const (
 	FieldAppTitle = "app_title"
 	// FieldResourceID holds the string denoting the resource_id field in the database.
 	FieldResourceID = "resource_id"
+	// FieldBaseURL holds the string denoting the base_url field in the database.
+	FieldBaseURL = "base_url"
 	// FieldEndpoint holds the string denoting the endpoint field in the database.
 	FieldEndpoint = "endpoint"
+	// FieldHeaders holds the string denoting the headers field in the database.
+	FieldHeaders = "headers"
 	// FieldTransport holds the string denoting the transport field in the database.
 	FieldTransport = "transport"
 	// FieldEnabled holds the string denoting the enabled field in the database.
@@ -46,12 +54,16 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
+	FieldDescription,
 	FieldSlug,
+	FieldProviderType,
 	FieldAppID,
 	FieldDeployID,
 	FieldAppTitle,
 	FieldResourceID,
+	FieldBaseURL,
 	FieldEndpoint,
+	FieldHeaders,
 	FieldTransport,
 	FieldEnabled,
 	FieldLastUsedAt,
@@ -72,8 +84,12 @@ func ValidColumn(column string) bool {
 var (
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
+	// DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
+	DescriptionValidator func(string) error
 	// SlugValidator is a validator for the "slug" field. It is called by the builders before save.
 	SlugValidator func(string) error
+	// DefaultAppID holds the default value on creation for the "app_id" field.
+	DefaultAppID string
 	// AppIDValidator is a validator for the "app_id" field. It is called by the builders before save.
 	AppIDValidator func(string) error
 	// DeployIDValidator is a validator for the "deploy_id" field. It is called by the builders before save.
@@ -82,10 +98,14 @@ var (
 	AppTitleValidator func(string) error
 	// ResourceIDValidator is a validator for the "resource_id" field. It is called by the builders before save.
 	ResourceIDValidator func(string) error
+	// BaseURLValidator is a validator for the "base_url" field. It is called by the builders before save.
+	BaseURLValidator func(string) error
 	// DefaultEndpoint holds the default value on creation for the "endpoint" field.
 	DefaultEndpoint string
 	// EndpointValidator is a validator for the "endpoint" field. It is called by the builders before save.
 	EndpointValidator func(string) error
+	// DefaultHeaders holds the default value on creation for the "headers" field.
+	DefaultHeaders string
 	// DefaultEnabled holds the default value on creation for the "enabled" field.
 	DefaultEnabled bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -95,6 +115,32 @@ var (
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
 )
+
+// ProviderType defines the type for the "provider_type" enum field.
+type ProviderType string
+
+// ProviderTypeLazycat is the default value of the ProviderType enum.
+const DefaultProviderType = ProviderTypeLazycat
+
+// ProviderType values.
+const (
+	ProviderTypeLazycat ProviderType = "lazycat"
+	ProviderTypeCustom  ProviderType = "custom"
+)
+
+func (pt ProviderType) String() string {
+	return string(pt)
+}
+
+// ProviderTypeValidator is a validator for the "provider_type" field enum values. It is called by the builders before save.
+func ProviderTypeValidator(pt ProviderType) error {
+	switch pt {
+	case ProviderTypeLazycat, ProviderTypeCustom:
+		return nil
+	default:
+		return fmt.Errorf("upstreamprovider: invalid enum value for provider_type field: %q", pt)
+	}
+}
 
 // Transport defines the type for the "transport" enum field.
 type Transport string
@@ -135,9 +181,19 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+}
+
 // BySlug orders the results by the slug field.
 func BySlug(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSlug, opts...).ToFunc()
+}
+
+// ByProviderType orders the results by the provider_type field.
+func ByProviderType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProviderType, opts...).ToFunc()
 }
 
 // ByAppID orders the results by the app_id field.
@@ -160,9 +216,19 @@ func ByResourceID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldResourceID, opts...).ToFunc()
 }
 
+// ByBaseURL orders the results by the base_url field.
+func ByBaseURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBaseURL, opts...).ToFunc()
+}
+
 // ByEndpoint orders the results by the endpoint field.
 func ByEndpoint(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEndpoint, opts...).ToFunc()
+}
+
+// ByHeaders orders the results by the headers field.
+func ByHeaders(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHeaders, opts...).ToFunc()
 }
 
 // ByTransport orders the results by the transport field.

@@ -17,12 +17,16 @@ type UpstreamProvider struct {
 func (UpstreamProvider) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").NotEmpty().MaxLen(120),
+		field.String("description").Optional().Nillable().MaxLen(300),
 		field.String("slug").NotEmpty().MaxLen(180).Unique(),
-		field.String("app_id").NotEmpty().MaxLen(180),
+		field.Enum("provider_type").StorageKey("type").Values("lazycat", "custom").Default("lazycat"),
+		field.String("app_id").Default("").MaxLen(180),
 		field.String("deploy_id").Optional().Nillable().MaxLen(180),
 		field.String("app_title").Optional().Nillable().MaxLen(180),
 		field.String("resource_id").Optional().Nillable().MaxLen(80),
+		field.String("base_url").Optional().Nillable().MaxLen(2048),
 		field.String("endpoint").Default("/mcp").NotEmpty().MaxLen(240),
+		field.Text("headers").Default("[]").Sensitive(),
 		field.Enum("transport").Values("streamable_http", "sse").Default("streamable_http"),
 		field.Bool("enabled").Default(true),
 		field.Time("last_used_at").Optional().Nillable(),
@@ -35,6 +39,7 @@ func (UpstreamProvider) Fields() []ent.Field {
 func (UpstreamProvider) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("slug").Unique(),
+		index.Fields("provider_type"),
 		index.Fields("app_id"),
 		index.Fields("enabled"),
 	}

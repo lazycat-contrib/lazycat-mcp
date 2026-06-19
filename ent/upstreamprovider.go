@@ -19,8 +19,12 @@ type UpstreamProvider struct {
 	ID int `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// Description holds the value of the "description" field.
+	Description *string `json:"description,omitempty"`
 	// Slug holds the value of the "slug" field.
 	Slug string `json:"slug,omitempty"`
+	// ProviderType holds the value of the "provider_type" field.
+	ProviderType upstreamprovider.ProviderType `json:"provider_type,omitempty"`
 	// AppID holds the value of the "app_id" field.
 	AppID string `json:"app_id,omitempty"`
 	// DeployID holds the value of the "deploy_id" field.
@@ -29,8 +33,12 @@ type UpstreamProvider struct {
 	AppTitle *string `json:"app_title,omitempty"`
 	// ResourceID holds the value of the "resource_id" field.
 	ResourceID *string `json:"resource_id,omitempty"`
+	// BaseURL holds the value of the "base_url" field.
+	BaseURL *string `json:"base_url,omitempty"`
 	// Endpoint holds the value of the "endpoint" field.
 	Endpoint string `json:"endpoint,omitempty"`
+	// Headers holds the value of the "headers" field.
+	Headers string `json:"-"`
 	// Transport holds the value of the "transport" field.
 	Transport upstreamprovider.Transport `json:"transport,omitempty"`
 	// Enabled holds the value of the "enabled" field.
@@ -53,7 +61,7 @@ func (*UpstreamProvider) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case upstreamprovider.FieldID:
 			values[i] = new(sql.NullInt64)
-		case upstreamprovider.FieldName, upstreamprovider.FieldSlug, upstreamprovider.FieldAppID, upstreamprovider.FieldDeployID, upstreamprovider.FieldAppTitle, upstreamprovider.FieldResourceID, upstreamprovider.FieldEndpoint, upstreamprovider.FieldTransport:
+		case upstreamprovider.FieldName, upstreamprovider.FieldDescription, upstreamprovider.FieldSlug, upstreamprovider.FieldProviderType, upstreamprovider.FieldAppID, upstreamprovider.FieldDeployID, upstreamprovider.FieldAppTitle, upstreamprovider.FieldResourceID, upstreamprovider.FieldBaseURL, upstreamprovider.FieldEndpoint, upstreamprovider.FieldHeaders, upstreamprovider.FieldTransport:
 			values[i] = new(sql.NullString)
 		case upstreamprovider.FieldLastUsedAt, upstreamprovider.FieldCreatedAt, upstreamprovider.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -84,11 +92,24 @@ func (_m *UpstreamProvider) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Name = value.String
 			}
+		case upstreamprovider.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				_m.Description = new(string)
+				*_m.Description = value.String
+			}
 		case upstreamprovider.FieldSlug:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field slug", values[i])
 			} else if value.Valid {
 				_m.Slug = value.String
+			}
+		case upstreamprovider.FieldProviderType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field provider_type", values[i])
+			} else if value.Valid {
+				_m.ProviderType = upstreamprovider.ProviderType(value.String)
 			}
 		case upstreamprovider.FieldAppID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -117,11 +138,24 @@ func (_m *UpstreamProvider) assignValues(columns []string, values []any) error {
 				_m.ResourceID = new(string)
 				*_m.ResourceID = value.String
 			}
+		case upstreamprovider.FieldBaseURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field base_url", values[i])
+			} else if value.Valid {
+				_m.BaseURL = new(string)
+				*_m.BaseURL = value.String
+			}
 		case upstreamprovider.FieldEndpoint:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field endpoint", values[i])
 			} else if value.Valid {
 				_m.Endpoint = value.String
+			}
+		case upstreamprovider.FieldHeaders:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field headers", values[i])
+			} else if value.Valid {
+				_m.Headers = value.String
 			}
 		case upstreamprovider.FieldTransport:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -193,8 +227,16 @@ func (_m *UpstreamProvider) String() string {
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
+	if v := _m.Description; v != nil {
+		builder.WriteString("description=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
 	builder.WriteString("slug=")
 	builder.WriteString(_m.Slug)
+	builder.WriteString(", ")
+	builder.WriteString("provider_type=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ProviderType))
 	builder.WriteString(", ")
 	builder.WriteString("app_id=")
 	builder.WriteString(_m.AppID)
@@ -214,8 +256,15 @@ func (_m *UpstreamProvider) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
+	if v := _m.BaseURL; v != nil {
+		builder.WriteString("base_url=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
 	builder.WriteString("endpoint=")
 	builder.WriteString(_m.Endpoint)
+	builder.WriteString(", ")
+	builder.WriteString("headers=<sensitive>")
 	builder.WriteString(", ")
 	builder.WriteString("transport=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Transport))

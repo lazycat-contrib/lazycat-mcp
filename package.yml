@@ -1,7 +1,7 @@
 package: cloud.lazycat.app.czyt.lazycat-mcp
-version: 0.1.1
+version: 0.1.2
 name: 懒猫MCP
-description: "懒猫微服MCP服务 - 使用本服务可以实现懒猫微服硬件和大模型的交互"
+description: "懒猫微服MCP服务 - 使用本服务可以实现懒猫微服硬件、应用mcp和外部mcp的聚合"
 min_os_version: 1.5.2
 license: https://choosealicense.com/licenses/mit/
 homepage:
@@ -18,7 +18,7 @@ import_resources:
 locales:
   zh:
     name: "懒猫MCP"
-    description: "懒猫微服MCP服务 - 使用本服务可以实现懒猫微服硬件和大模型的交互"
+    description: "懒猫微服MCP服务 - 使用本服务可以实现懒猫微服硬件、应用mcp和外部mcp的聚合"
   en:
     name: "LazyCat MCP"
-    description: "LazyCat MCP Server - Enables interaction between LazyCat hardware and LLMs"
+    description: "LazyCat MCP Server - Enables interaction between LazyCat hardware、applications、external mcp and LLMs "

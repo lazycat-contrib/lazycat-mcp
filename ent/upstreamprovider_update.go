@@ -42,6 +42,26 @@ func (_u *UpstreamProviderUpdate) SetNillableName(v *string) *UpstreamProviderUp
 	return _u
 }
 
+// SetDescription sets the "description" field.
+func (_u *UpstreamProviderUpdate) SetDescription(v string) *UpstreamProviderUpdate {
+	_u.mutation.SetDescription(v)
+	return _u
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (_u *UpstreamProviderUpdate) SetNillableDescription(v *string) *UpstreamProviderUpdate {
+	if v != nil {
+		_u.SetDescription(*v)
+	}
+	return _u
+}
+
+// ClearDescription clears the value of the "description" field.
+func (_u *UpstreamProviderUpdate) ClearDescription() *UpstreamProviderUpdate {
+	_u.mutation.ClearDescription()
+	return _u
+}
+
 // SetSlug sets the "slug" field.
 func (_u *UpstreamProviderUpdate) SetSlug(v string) *UpstreamProviderUpdate {
 	_u.mutation.SetSlug(v)
@@ -52,6 +72,20 @@ func (_u *UpstreamProviderUpdate) SetSlug(v string) *UpstreamProviderUpdate {
 func (_u *UpstreamProviderUpdate) SetNillableSlug(v *string) *UpstreamProviderUpdate {
 	if v != nil {
 		_u.SetSlug(*v)
+	}
+	return _u
+}
+
+// SetProviderType sets the "provider_type" field.
+func (_u *UpstreamProviderUpdate) SetProviderType(v upstreamprovider.ProviderType) *UpstreamProviderUpdate {
+	_u.mutation.SetProviderType(v)
+	return _u
+}
+
+// SetNillableProviderType sets the "provider_type" field if the given value is not nil.
+func (_u *UpstreamProviderUpdate) SetNillableProviderType(v *upstreamprovider.ProviderType) *UpstreamProviderUpdate {
+	if v != nil {
+		_u.SetProviderType(*v)
 	}
 	return _u
 }
@@ -130,6 +164,26 @@ func (_u *UpstreamProviderUpdate) ClearResourceID() *UpstreamProviderUpdate {
 	return _u
 }
 
+// SetBaseURL sets the "base_url" field.
+func (_u *UpstreamProviderUpdate) SetBaseURL(v string) *UpstreamProviderUpdate {
+	_u.mutation.SetBaseURL(v)
+	return _u
+}
+
+// SetNillableBaseURL sets the "base_url" field if the given value is not nil.
+func (_u *UpstreamProviderUpdate) SetNillableBaseURL(v *string) *UpstreamProviderUpdate {
+	if v != nil {
+		_u.SetBaseURL(*v)
+	}
+	return _u
+}
+
+// ClearBaseURL clears the value of the "base_url" field.
+func (_u *UpstreamProviderUpdate) ClearBaseURL() *UpstreamProviderUpdate {
+	_u.mutation.ClearBaseURL()
+	return _u
+}
+
 // SetEndpoint sets the "endpoint" field.
 func (_u *UpstreamProviderUpdate) SetEndpoint(v string) *UpstreamProviderUpdate {
 	_u.mutation.SetEndpoint(v)
@@ -140,6 +194,20 @@ func (_u *UpstreamProviderUpdate) SetEndpoint(v string) *UpstreamProviderUpdate 
 func (_u *UpstreamProviderUpdate) SetNillableEndpoint(v *string) *UpstreamProviderUpdate {
 	if v != nil {
 		_u.SetEndpoint(*v)
+	}
+	return _u
+}
+
+// SetHeaders sets the "headers" field.
+func (_u *UpstreamProviderUpdate) SetHeaders(v string) *UpstreamProviderUpdate {
+	_u.mutation.SetHeaders(v)
+	return _u
+}
+
+// SetNillableHeaders sets the "headers" field if the given value is not nil.
+func (_u *UpstreamProviderUpdate) SetNillableHeaders(v *string) *UpstreamProviderUpdate {
+	if v != nil {
+		_u.SetHeaders(*v)
 	}
 	return _u
 }
@@ -246,9 +314,19 @@ func (_u *UpstreamProviderUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Description(); ok {
+		if err := upstreamprovider.DescriptionValidator(v); err != nil {
+			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.description": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Slug(); ok {
 		if err := upstreamprovider.SlugValidator(v); err != nil {
 			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.slug": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ProviderType(); ok {
+		if err := upstreamprovider.ProviderTypeValidator(v); err != nil {
+			return &ValidationError{Name: "provider_type", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.provider_type": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.AppID(); ok {
@@ -269,6 +347,11 @@ func (_u *UpstreamProviderUpdate) check() error {
 	if v, ok := _u.mutation.ResourceID(); ok {
 		if err := upstreamprovider.ResourceIDValidator(v); err != nil {
 			return &ValidationError{Name: "resource_id", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.resource_id": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.BaseURL(); ok {
+		if err := upstreamprovider.BaseURLValidator(v); err != nil {
+			return &ValidationError{Name: "base_url", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.base_url": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Endpoint(); ok {
@@ -299,8 +382,17 @@ func (_u *UpstreamProviderUpdate) sqlSave(ctx context.Context) (_node int, err e
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(upstreamprovider.FieldName, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.Description(); ok {
+		_spec.SetField(upstreamprovider.FieldDescription, field.TypeString, value)
+	}
+	if _u.mutation.DescriptionCleared() {
+		_spec.ClearField(upstreamprovider.FieldDescription, field.TypeString)
+	}
 	if value, ok := _u.mutation.Slug(); ok {
 		_spec.SetField(upstreamprovider.FieldSlug, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ProviderType(); ok {
+		_spec.SetField(upstreamprovider.FieldProviderType, field.TypeEnum, value)
 	}
 	if value, ok := _u.mutation.AppID(); ok {
 		_spec.SetField(upstreamprovider.FieldAppID, field.TypeString, value)
@@ -323,8 +415,17 @@ func (_u *UpstreamProviderUpdate) sqlSave(ctx context.Context) (_node int, err e
 	if _u.mutation.ResourceIDCleared() {
 		_spec.ClearField(upstreamprovider.FieldResourceID, field.TypeString)
 	}
+	if value, ok := _u.mutation.BaseURL(); ok {
+		_spec.SetField(upstreamprovider.FieldBaseURL, field.TypeString, value)
+	}
+	if _u.mutation.BaseURLCleared() {
+		_spec.ClearField(upstreamprovider.FieldBaseURL, field.TypeString)
+	}
 	if value, ok := _u.mutation.Endpoint(); ok {
 		_spec.SetField(upstreamprovider.FieldEndpoint, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Headers(); ok {
+		_spec.SetField(upstreamprovider.FieldHeaders, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Transport(); ok {
 		_spec.SetField(upstreamprovider.FieldTransport, field.TypeEnum, value)
@@ -375,6 +476,26 @@ func (_u *UpstreamProviderUpdateOne) SetNillableName(v *string) *UpstreamProvide
 	return _u
 }
 
+// SetDescription sets the "description" field.
+func (_u *UpstreamProviderUpdateOne) SetDescription(v string) *UpstreamProviderUpdateOne {
+	_u.mutation.SetDescription(v)
+	return _u
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (_u *UpstreamProviderUpdateOne) SetNillableDescription(v *string) *UpstreamProviderUpdateOne {
+	if v != nil {
+		_u.SetDescription(*v)
+	}
+	return _u
+}
+
+// ClearDescription clears the value of the "description" field.
+func (_u *UpstreamProviderUpdateOne) ClearDescription() *UpstreamProviderUpdateOne {
+	_u.mutation.ClearDescription()
+	return _u
+}
+
 // SetSlug sets the "slug" field.
 func (_u *UpstreamProviderUpdateOne) SetSlug(v string) *UpstreamProviderUpdateOne {
 	_u.mutation.SetSlug(v)
@@ -385,6 +506,20 @@ func (_u *UpstreamProviderUpdateOne) SetSlug(v string) *UpstreamProviderUpdateOn
 func (_u *UpstreamProviderUpdateOne) SetNillableSlug(v *string) *UpstreamProviderUpdateOne {
 	if v != nil {
 		_u.SetSlug(*v)
+	}
+	return _u
+}
+
+// SetProviderType sets the "provider_type" field.
+func (_u *UpstreamProviderUpdateOne) SetProviderType(v upstreamprovider.ProviderType) *UpstreamProviderUpdateOne {
+	_u.mutation.SetProviderType(v)
+	return _u
+}
+
+// SetNillableProviderType sets the "provider_type" field if the given value is not nil.
+func (_u *UpstreamProviderUpdateOne) SetNillableProviderType(v *upstreamprovider.ProviderType) *UpstreamProviderUpdateOne {
+	if v != nil {
+		_u.SetProviderType(*v)
 	}
 	return _u
 }
@@ -463,6 +598,26 @@ func (_u *UpstreamProviderUpdateOne) ClearResourceID() *UpstreamProviderUpdateOn
 	return _u
 }
 
+// SetBaseURL sets the "base_url" field.
+func (_u *UpstreamProviderUpdateOne) SetBaseURL(v string) *UpstreamProviderUpdateOne {
+	_u.mutation.SetBaseURL(v)
+	return _u
+}
+
+// SetNillableBaseURL sets the "base_url" field if the given value is not nil.
+func (_u *UpstreamProviderUpdateOne) SetNillableBaseURL(v *string) *UpstreamProviderUpdateOne {
+	if v != nil {
+		_u.SetBaseURL(*v)
+	}
+	return _u
+}
+
+// ClearBaseURL clears the value of the "base_url" field.
+func (_u *UpstreamProviderUpdateOne) ClearBaseURL() *UpstreamProviderUpdateOne {
+	_u.mutation.ClearBaseURL()
+	return _u
+}
+
 // SetEndpoint sets the "endpoint" field.
 func (_u *UpstreamProviderUpdateOne) SetEndpoint(v string) *UpstreamProviderUpdateOne {
 	_u.mutation.SetEndpoint(v)
@@ -473,6 +628,20 @@ func (_u *UpstreamProviderUpdateOne) SetEndpoint(v string) *UpstreamProviderUpda
 func (_u *UpstreamProviderUpdateOne) SetNillableEndpoint(v *string) *UpstreamProviderUpdateOne {
 	if v != nil {
 		_u.SetEndpoint(*v)
+	}
+	return _u
+}
+
+// SetHeaders sets the "headers" field.
+func (_u *UpstreamProviderUpdateOne) SetHeaders(v string) *UpstreamProviderUpdateOne {
+	_u.mutation.SetHeaders(v)
+	return _u
+}
+
+// SetNillableHeaders sets the "headers" field if the given value is not nil.
+func (_u *UpstreamProviderUpdateOne) SetNillableHeaders(v *string) *UpstreamProviderUpdateOne {
+	if v != nil {
+		_u.SetHeaders(*v)
 	}
 	return _u
 }
@@ -592,9 +761,19 @@ func (_u *UpstreamProviderUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Description(); ok {
+		if err := upstreamprovider.DescriptionValidator(v); err != nil {
+			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.description": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Slug(); ok {
 		if err := upstreamprovider.SlugValidator(v); err != nil {
 			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.slug": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ProviderType(); ok {
+		if err := upstreamprovider.ProviderTypeValidator(v); err != nil {
+			return &ValidationError{Name: "provider_type", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.provider_type": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.AppID(); ok {
@@ -615,6 +794,11 @@ func (_u *UpstreamProviderUpdateOne) check() error {
 	if v, ok := _u.mutation.ResourceID(); ok {
 		if err := upstreamprovider.ResourceIDValidator(v); err != nil {
 			return &ValidationError{Name: "resource_id", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.resource_id": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.BaseURL(); ok {
+		if err := upstreamprovider.BaseURLValidator(v); err != nil {
+			return &ValidationError{Name: "base_url", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.base_url": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Endpoint(); ok {
@@ -662,8 +846,17 @@ func (_u *UpstreamProviderUpdateOne) sqlSave(ctx context.Context) (_node *Upstre
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(upstreamprovider.FieldName, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.Description(); ok {
+		_spec.SetField(upstreamprovider.FieldDescription, field.TypeString, value)
+	}
+	if _u.mutation.DescriptionCleared() {
+		_spec.ClearField(upstreamprovider.FieldDescription, field.TypeString)
+	}
 	if value, ok := _u.mutation.Slug(); ok {
 		_spec.SetField(upstreamprovider.FieldSlug, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ProviderType(); ok {
+		_spec.SetField(upstreamprovider.FieldProviderType, field.TypeEnum, value)
 	}
 	if value, ok := _u.mutation.AppID(); ok {
 		_spec.SetField(upstreamprovider.FieldAppID, field.TypeString, value)
@@ -686,8 +879,17 @@ func (_u *UpstreamProviderUpdateOne) sqlSave(ctx context.Context) (_node *Upstre
 	if _u.mutation.ResourceIDCleared() {
 		_spec.ClearField(upstreamprovider.FieldResourceID, field.TypeString)
 	}
+	if value, ok := _u.mutation.BaseURL(); ok {
+		_spec.SetField(upstreamprovider.FieldBaseURL, field.TypeString, value)
+	}
+	if _u.mutation.BaseURLCleared() {
+		_spec.ClearField(upstreamprovider.FieldBaseURL, field.TypeString)
+	}
 	if value, ok := _u.mutation.Endpoint(); ok {
 		_spec.SetField(upstreamprovider.FieldEndpoint, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Headers(); ok {
+		_spec.SetField(upstreamprovider.FieldHeaders, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Transport(); ok {
 		_spec.SetField(upstreamprovider.FieldTransport, field.TypeEnum, value)

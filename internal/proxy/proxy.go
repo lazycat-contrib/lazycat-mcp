@@ -2,21 +2,25 @@ package proxy
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"strings"
 	"time"
 
 	"lazycat-mcp/ent"
+	"lazycat-mcp/ent/upstreamprovider"
 )
 
 var (
 	ErrProviderNotFound = errors.New("provider not found")
 	ErrTicketMissing    = errors.New("lazycat user ticket is missing")
+	headerNamePattern   = regexp.MustCompile("^[!#$%&'*+\\-.^_`|~0-9A-Za-z]+$")
 )
 
 type ProviderResolver interface {
@@ -61,15 +65,13 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ticket, ok := p.tickets.Get()
-	if !ok {
-		writeProxyError(w, http.StatusPreconditionRequired, ErrTicketMissing.Error())
-		return
-	}
-
-	target, err := targetURL(provider.AppID, provider.Endpoint, rest, r.URL.RawQuery)
+	target, headers, err := p.prepareUpstreamRequest(provider, r, rest)
 	if err != nil {
-		writeProxyError(w, http.StatusBadGateway, err.Error())
+		status := http.StatusBadGateway
+		if errors.Is(err, ErrTicketMissing) {
+			status = http.StatusPreconditionRequired
+		}
+		writeProxyError(w, status, err.Error())
 		return
 	}
 
@@ -78,7 +80,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeProxyError(w, http.StatusBadGateway, err.Error())
 		return
 	}
-	req.Header = HeadersForUpstream(r.Header, ticket)
+	req.Header = headers
 
 	p.resolver.MarkUsed(context.WithoutCancel(r.Context()), provider.ID)
 
@@ -92,6 +94,33 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	copyResponseHeaders(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
 	_, _ = io.Copy(w, resp.Body)
+}
+
+func (p *Proxy) prepareUpstreamRequest(provider *ent.UpstreamProvider, r *http.Request, rest string) (string, http.Header, error) {
+	switch provider.ProviderType {
+	case upstreamprovider.ProviderTypeLazycat:
+		ticket, ok := p.tickets.Get()
+		if !ok {
+			return "", nil, ErrTicketMissing
+		}
+		target, err := lazyCatTargetURL(provider.AppID, provider.Endpoint, rest, r.URL.RawQuery)
+		if err != nil {
+			return "", nil, err
+		}
+		return target, HeadersForLazyCatUpstream(r.Header, ticket), nil
+	case upstreamprovider.ProviderTypeCustom:
+		target, err := customTargetURL(provider.BaseURL, provider.Endpoint, rest, r.URL.RawQuery)
+		if err != nil {
+			return "", nil, err
+		}
+		headers, err := HeadersForCustomUpstream(r.Header, provider.Headers)
+		if err != nil {
+			return "", nil, err
+		}
+		return target, headers, nil
+	default:
+		return "", nil, fmt.Errorf("unsupported provider type: %s", provider.ProviderType)
+	}
 }
 
 func routeParts(requestPath string) (slug string, rest string, ok bool) {
@@ -113,7 +142,7 @@ func routeParts(requestPath string) (slug string, rest string, ok bool) {
 	return parts[0], rest, true
 }
 
-func targetURL(appID string, endpoint string, rest string, requestQuery string) (string, error) {
+func lazyCatTargetURL(appID string, endpoint string, rest string, requestQuery string) (string, error) {
 	if appID == "" || strings.ContainsAny(appID, "/:@") {
 		return "", fmt.Errorf("invalid app id")
 	}
@@ -145,7 +174,61 @@ func targetURL(appID string, endpoint string, rest string, requestQuery string) 
 	return parsed.String(), nil
 }
 
-func HeadersForUpstream(in http.Header, ticket string) http.Header {
+func targetURL(appID string, endpoint string, rest string, requestQuery string) (string, error) {
+	return lazyCatTargetURL(appID, endpoint, rest, requestQuery)
+}
+
+func customTargetURL(baseURL *string, endpoint string, rest string, requestQuery string) (string, error) {
+	if baseURL == nil || strings.TrimSpace(*baseURL) == "" {
+		return "", fmt.Errorf("custom provider service url is missing")
+	}
+	base, err := url.Parse(strings.TrimRight(strings.TrimSpace(*baseURL), "/"))
+	if err != nil {
+		return "", fmt.Errorf("invalid custom provider service url: %w", err)
+	}
+	if !base.IsAbs() || base.Host == "" || (base.Scheme != "http" && base.Scheme != "https") {
+		return "", fmt.Errorf("custom provider service url must use http or https")
+	}
+	parsed, err := url.Parse(endpoint)
+	if err != nil {
+		return "", fmt.Errorf("invalid provider endpoint: %w", err)
+	}
+	if parsed.IsAbs() || parsed.Host != "" || !strings.HasPrefix(parsed.Path, "/") {
+		return "", fmt.Errorf("provider endpoint must be an absolute path")
+	}
+
+	target := *base
+	target.Path = joinURLPath(base.Path, parsed.Path, rest)
+	target.RawQuery = parsed.RawQuery
+	if requestQuery != "" {
+		if target.RawQuery != "" {
+			target.RawQuery += "&" + requestQuery
+		} else {
+			target.RawQuery = requestQuery
+		}
+	}
+	return target.String(), nil
+}
+
+func joinURLPath(parts ...string) string {
+	cleanParts := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part == "" || part == "/" {
+			continue
+		}
+		cleanParts = append(cleanParts, part)
+	}
+	if len(cleanParts) == 0 {
+		return "/"
+	}
+	joined := path.Join(cleanParts...)
+	if !strings.HasPrefix(joined, "/") {
+		joined = "/" + joined
+	}
+	return joined
+}
+
+func HeadersForLazyCatUpstream(in http.Header, ticket string) http.Header {
 	out := make(http.Header)
 	for _, key := range forwardedHeaders() {
 		for _, value := range in.Values(key) {
@@ -154,6 +237,63 @@ func HeadersForUpstream(in http.Header, ticket string) http.Header {
 	}
 	out.Set("X-HC-USER-TICKET", ticket)
 	return out
+}
+
+func HeadersForUpstream(in http.Header, ticket string) http.Header {
+	return HeadersForLazyCatUpstream(in, ticket)
+}
+
+func HeadersForCustomUpstream(in http.Header, rawHeaders string) (http.Header, error) {
+	out := make(http.Header)
+	for _, key := range forwardedHeaders() {
+		for _, value := range in.Values(key) {
+			out.Add(key, value)
+		}
+	}
+	headers, err := configuredHeaders(rawHeaders)
+	if err != nil {
+		return nil, err
+	}
+	for _, header := range headers {
+		out.Set(header.Name, header.Value)
+	}
+	return out, nil
+}
+
+type configuredHeader struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+func configuredHeaders(raw string) ([]configuredHeader, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
+	}
+	var headers []configuredHeader
+	if err := json.Unmarshal([]byte(raw), &headers); err != nil {
+		return nil, fmt.Errorf("invalid custom provider headers: %w", err)
+	}
+	for _, header := range headers {
+		if strings.TrimSpace(header.Name) == "" || !headerNamePattern.MatchString(header.Name) {
+			return nil, fmt.Errorf("invalid custom provider header name")
+		}
+		if isReservedConfiguredHeader(header.Name) {
+			return nil, fmt.Errorf("reserved custom provider header cannot be configured")
+		}
+	}
+	return headers, nil
+}
+
+func isReservedConfiguredHeader(name string) bool {
+	switch strings.ToLower(name) {
+	case "host", "content-length", "connection", "keep-alive", "proxy-authenticate",
+		"proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade",
+		"x-mcp-token":
+		return true
+	default:
+		return false
+	}
 }
 
 func forwardedHeaders() []string {

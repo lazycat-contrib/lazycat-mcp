@@ -43,3 +43,43 @@ func TestTargetURLRejectsAbsoluteEndpoint(t *testing.T) {
 		t.Fatal("expected absolute endpoint to be rejected")
 	}
 }
+
+func TestCustomTargetURLUsesConfiguredServiceURL(t *testing.T) {
+	baseURL := "https://example.com/base"
+	got, err := customTargetURL(&baseURL, "/api/mcp?mode=default", "/tools/list", "cursor=1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "https://example.com/base/api/mcp/tools/list?mode=default&cursor=1"
+	if got != want {
+		t.Fatalf("target url = %q, want %q", got, want)
+	}
+}
+
+func TestHeadersForCustomUpstreamUsesConfiguredHeadersWithoutLazyCatTicket(t *testing.T) {
+	in := http.Header{}
+	in.Set("Authorization", "Bearer caller-token")
+	in.Set("X-MCP-Token", "caller-token")
+	in.Set("Mcp-Session-Id", "session-1")
+	in.Set("Accept", "application/json")
+
+	out, err := HeadersForCustomUpstream(in, `[{"name":"Authorization","value":"Bearer upstream"},{"name":"X-Api-Key","value":"secret"}]`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := out.Get("Authorization"); got != "Bearer upstream" {
+		t.Fatalf("authorization = %q", got)
+	}
+	if got := out.Get("X-Api-Key"); got != "secret" {
+		t.Fatalf("api key = %q", got)
+	}
+	if got := out.Get("X-HC-USER-TICKET"); got != "" {
+		t.Fatalf("lazycat ticket forwarded: %q", got)
+	}
+	if got := out.Get("X-MCP-Token"); got != "" {
+		t.Fatalf("mcp token forwarded: %q", got)
+	}
+	if got := out.Get("Mcp-Session-Id"); got != "session-1" {
+		t.Fatalf("session header = %q", got)
+	}
+}

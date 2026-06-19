@@ -33,18 +33,18 @@ func (a *App) newMCPServer() *mcpserver.MCPServer {
 func (a *App) providerListTool() mcpserver.ServerTool {
 	return mcpserver.ServerTool{
 		Tool: mcp.NewTool("lazycat_mcp_provider_list",
-			mcp.WithDescription("List LazyCat MCP gateway providers available through this program."),
+			mcp.WithDescription("List MCP providers available through this program's gateway endpoints."),
 		),
 		Handler: func(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-			providers, err := a.providers.Enabled(ctx)
+			providers, err := a.providers.EnabledPublic(ctx)
 			if err != nil {
 				return mcp.NewToolResultError(err.Error()), nil
 			}
 			payload := map[string]any{
 				"local": map[string]any{
-					"app_id":   selfPackageID,
-					"name":     "LazyCat MCP",
-					"endpoint": "/mcp",
+					"name":      "LazyCat MCP",
+					"endpoint":  "/mcp",
+					"transport": "streamable_http",
 				},
 				"providers": providers,
 			}
