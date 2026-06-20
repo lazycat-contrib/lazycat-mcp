@@ -174,6 +174,10 @@ func lazyCatTargetURL(appID string, endpoint string, rest string, requestQuery s
 	return parsed.String(), nil
 }
 
+func LazyCatTargetURL(appID string, endpoint string, rest string, requestQuery string) (string, error) {
+	return lazyCatTargetURL(appID, endpoint, rest, requestQuery)
+}
+
 func targetURL(appID string, endpoint string, rest string, requestQuery string) (string, error) {
 	return lazyCatTargetURL(appID, endpoint, rest, requestQuery)
 }
@@ -208,6 +212,10 @@ func customTargetURL(baseURL *string, endpoint string, rest string, requestQuery
 		}
 	}
 	return target.String(), nil
+}
+
+func CustomTargetURL(baseURL *string, endpoint string, rest string, requestQuery string) (string, error) {
+	return customTargetURL(baseURL, endpoint, rest, requestQuery)
 }
 
 func joinURLPath(parts ...string) string {

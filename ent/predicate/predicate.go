@@ -6,6 +6,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// MCPCallLog is the predicate function for mcpcalllog builders.
+type MCPCallLog func(*sql.Selector)
+
 // MCPToken is the predicate function for mcptoken builders.
 type MCPToken func(*sql.Selector)
 

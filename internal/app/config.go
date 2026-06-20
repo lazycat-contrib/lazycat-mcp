@@ -3,6 +3,7 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 const (
@@ -15,16 +16,18 @@ const (
 )
 
 type Config struct {
-	Addr         string
-	DBPath       string
-	ResourceRoot string
+	Addr                string
+	DBPath              string
+	ResourceRoot        string
+	MCPLogRetentionDays int
 }
 
 func LoadConfig() Config {
 	cfg := Config{
-		Addr:         getenv("LAZYCAT_MCP_ADDR", defaultAddr),
-		DBPath:       resolveDBPath(defaultLazyCatVarDir),
-		ResourceRoot: getenv("LAZYCAT_MCP_RESOURCE_ROOT", defaultResourceRoot),
+		Addr:                getenv("LAZYCAT_MCP_ADDR", defaultAddr),
+		DBPath:              resolveDBPath(defaultLazyCatVarDir),
+		ResourceRoot:        getenv("LAZYCAT_MCP_RESOURCE_ROOT", defaultResourceRoot),
+		MCPLogRetentionDays: getenvNonNegativeInt("LAZYCAT_MCP_LOG_RETENTION_DAYS", 30),
 	}
 	return cfg
 }
@@ -44,6 +47,18 @@ func getenv(key string, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func getenvNonNegativeInt(key string, fallback int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed < 0 {
+		return fallback
+	}
+	return parsed
 }
 
 func SelfSkillInstallPath() string {

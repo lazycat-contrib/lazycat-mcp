@@ -228,6 +228,7 @@ type PublicProviderDTO struct {
 	Description string `json:"description,omitempty"`
 	Endpoint    string `json:"endpoint"`
 	Transport   string `json:"transport"`
+	ToolPrefix  string `json:"tool_prefix,omitempty"`
 }
 
 func NewProviderService(db *ent.Client) *ProviderService {
@@ -259,6 +260,13 @@ func (s *ProviderService) EnabledPublic(ctx context.Context) ([]PublicProviderDT
 		out = append(out, publicProviderDTO(row))
 	}
 	return out, nil
+}
+
+func (s *ProviderService) Enabled(ctx context.Context) ([]*ent.UpstreamProvider, error) {
+	return s.db.UpstreamProvider.Query().
+		Where(upstreamprovider.EnabledEQ(true)).
+		Order(upstreamprovider.BySlug()).
+		All(ctx)
 }
 
 func (s *ProviderService) Create(ctx context.Context, input ProviderInput) (ProviderDTO, error) {
@@ -407,9 +415,10 @@ func providerDTO(row *ent.UpstreamProvider) ProviderDTO {
 
 func publicProviderDTO(row *ent.UpstreamProvider) PublicProviderDTO {
 	dto := PublicProviderDTO{
-		Name:      row.Name,
-		Endpoint:  "/mcp/apps/" + row.Slug,
-		Transport: row.Transport.String(),
+		Name:       row.Name,
+		Endpoint:   "/mcp/apps/" + row.Slug,
+		Transport:  row.Transport.String(),
+		ToolPrefix: sanitizeToolNamePart(row.Slug) + "__",
 	}
 	if row.Description != nil {
 		dto.Description = *row.Description

@@ -373,6 +373,26 @@ h3 { font-size: 14px; line-height: 1.25; }
   background: rgba(116, 86, 10, .3);
 }
 
+.log-list {
+  max-height: 460px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.log-item {
+  gap: 8px;
+}
+
+.log-badges {
+  justify-content: flex-end;
+}
+
+.log-error {
+  color: #fecaca;
+  padding-top: 8px;
+  border-top: 1px solid rgba(75, 78, 82, .54);
+}
+
 .toast {
   position: fixed;
   right: 18px;

@@ -12,15 +12,19 @@ type TicketStore struct {
 	updatedAt time.Time
 }
 
-func (s *TicketStore) Capture(r *http.Request) {
+func (s *TicketStore) Capture(r *http.Request) bool {
 	ticket := r.Header.Get("X-HC-USER-TICKET")
 	if ticket == "" {
-		return
+		return false
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.ticket == ticket {
+		return false
+	}
 	s.ticket = ticket
 	s.updatedAt = time.Now()
+	return true
 }
 
 func (s *TicketStore) Get() (string, bool) {

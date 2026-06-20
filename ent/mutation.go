@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"lazycat-mcp/ent/mcpcalllog"
 	"lazycat-mcp/ent/mcptoken"
 	"lazycat-mcp/ent/predicate"
 	"lazycat-mcp/ent/upstreamprovider"
@@ -25,9 +26,1171 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypeMCPCallLog       = "MCPCallLog"
 	TypeMCPToken         = "MCPToken"
 	TypeUpstreamProvider = "UpstreamProvider"
 )
+
+// MCPCallLogMutation represents an operation that mutates the MCPCallLog nodes in the graph.
+type MCPCallLogMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *int
+	source         *mcpcalllog.Source
+	transport      *mcpcalllog.Transport
+	method         *string
+	target         *string
+	provider_slug  *string
+	token_prefix   *string
+	session_id     *string
+	request_id     *string
+	status         *mcpcalllog.Status
+	status_code    *int
+	addstatus_code *int
+	duration_ms    *int64
+	addduration_ms *int64
+	error          *string
+	created_at     *time.Time
+	clearedFields  map[string]struct{}
+	done           bool
+	oldValue       func(context.Context) (*MCPCallLog, error)
+	predicates     []predicate.MCPCallLog
+}
+
+var _ ent.Mutation = (*MCPCallLogMutation)(nil)
+
+// mcpcalllogOption allows management of the mutation configuration using functional options.
+type mcpcalllogOption func(*MCPCallLogMutation)
+
+// newMCPCallLogMutation creates new mutation for the MCPCallLog entity.
+func newMCPCallLogMutation(c config, op Op, opts ...mcpcalllogOption) *MCPCallLogMutation {
+	m := &MCPCallLogMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeMCPCallLog,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withMCPCallLogID sets the ID field of the mutation.
+func withMCPCallLogID(id int) mcpcalllogOption {
+	return func(m *MCPCallLogMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *MCPCallLog
+		)
+		m.oldValue = func(ctx context.Context) (*MCPCallLog, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().MCPCallLog.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withMCPCallLog sets the old MCPCallLog of the mutation.
+func withMCPCallLog(node *MCPCallLog) mcpcalllogOption {
+	return func(m *MCPCallLogMutation) {
+		m.oldValue = func(context.Context) (*MCPCallLog, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m MCPCallLogMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m MCPCallLogMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *MCPCallLogMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *MCPCallLogMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().MCPCallLog.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetSource sets the "source" field.
+func (m *MCPCallLogMutation) SetSource(value mcpcalllog.Source) {
+	m.source = &value
+}
+
+// Source returns the value of the "source" field in the mutation.
+func (m *MCPCallLogMutation) Source() (r mcpcalllog.Source, exists bool) {
+	v := m.source
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSource returns the old "source" field's value of the MCPCallLog entity.
+// If the MCPCallLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPCallLogMutation) OldSource(ctx context.Context) (v mcpcalllog.Source, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSource is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSource requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSource: %w", err)
+	}
+	return oldValue.Source, nil
+}
+
+// ResetSource resets all changes to the "source" field.
+func (m *MCPCallLogMutation) ResetSource() {
+	m.source = nil
+}
+
+// SetTransport sets the "transport" field.
+func (m *MCPCallLogMutation) SetTransport(value mcpcalllog.Transport) {
+	m.transport = &value
+}
+
+// Transport returns the value of the "transport" field in the mutation.
+func (m *MCPCallLogMutation) Transport() (r mcpcalllog.Transport, exists bool) {
+	v := m.transport
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTransport returns the old "transport" field's value of the MCPCallLog entity.
+// If the MCPCallLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPCallLogMutation) OldTransport(ctx context.Context) (v mcpcalllog.Transport, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTransport is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTransport requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTransport: %w", err)
+	}
+	return oldValue.Transport, nil
+}
+
+// ResetTransport resets all changes to the "transport" field.
+func (m *MCPCallLogMutation) ResetTransport() {
+	m.transport = nil
+}
+
+// SetMethod sets the "method" field.
+func (m *MCPCallLogMutation) SetMethod(s string) {
+	m.method = &s
+}
+
+// Method returns the value of the "method" field in the mutation.
+func (m *MCPCallLogMutation) Method() (r string, exists bool) {
+	v := m.method
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMethod returns the old "method" field's value of the MCPCallLog entity.
+// If the MCPCallLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPCallLogMutation) OldMethod(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMethod is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMethod requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMethod: %w", err)
+	}
+	return oldValue.Method, nil
+}
+
+// ResetMethod resets all changes to the "method" field.
+func (m *MCPCallLogMutation) ResetMethod() {
+	m.method = nil
+}
+
+// SetTarget sets the "target" field.
+func (m *MCPCallLogMutation) SetTarget(s string) {
+	m.target = &s
+}
+
+// Target returns the value of the "target" field in the mutation.
+func (m *MCPCallLogMutation) Target() (r string, exists bool) {
+	v := m.target
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTarget returns the old "target" field's value of the MCPCallLog entity.
+// If the MCPCallLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPCallLogMutation) OldTarget(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTarget is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTarget requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTarget: %w", err)
+	}
+	return oldValue.Target, nil
+}
+
+// ResetTarget resets all changes to the "target" field.
+func (m *MCPCallLogMutation) ResetTarget() {
+	m.target = nil
+}
+
+// SetProviderSlug sets the "provider_slug" field.
+func (m *MCPCallLogMutation) SetProviderSlug(s string) {
+	m.provider_slug = &s
+}
+
+// ProviderSlug returns the value of the "provider_slug" field in the mutation.
+func (m *MCPCallLogMutation) ProviderSlug() (r string, exists bool) {
+	v := m.provider_slug
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProviderSlug returns the old "provider_slug" field's value of the MCPCallLog entity.
+// If the MCPCallLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPCallLogMutation) OldProviderSlug(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProviderSlug is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProviderSlug requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProviderSlug: %w", err)
+	}
+	return oldValue.ProviderSlug, nil
+}
+
+// ClearProviderSlug clears the value of the "provider_slug" field.
+func (m *MCPCallLogMutation) ClearProviderSlug() {
+	m.provider_slug = nil
+	m.clearedFields[mcpcalllog.FieldProviderSlug] = struct{}{}
+}
+
+// ProviderSlugCleared returns if the "provider_slug" field was cleared in this mutation.
+func (m *MCPCallLogMutation) ProviderSlugCleared() bool {
+	_, ok := m.clearedFields[mcpcalllog.FieldProviderSlug]
+	return ok
+}
+
+// ResetProviderSlug resets all changes to the "provider_slug" field.
+func (m *MCPCallLogMutation) ResetProviderSlug() {
+	m.provider_slug = nil
+	delete(m.clearedFields, mcpcalllog.FieldProviderSlug)
+}
+
+// SetTokenPrefix sets the "token_prefix" field.
+func (m *MCPCallLogMutation) SetTokenPrefix(s string) {
+	m.token_prefix = &s
+}
+
+// TokenPrefix returns the value of the "token_prefix" field in the mutation.
+func (m *MCPCallLogMutation) TokenPrefix() (r string, exists bool) {
+	v := m.token_prefix
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTokenPrefix returns the old "token_prefix" field's value of the MCPCallLog entity.
+// If the MCPCallLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPCallLogMutation) OldTokenPrefix(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTokenPrefix is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTokenPrefix requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTokenPrefix: %w", err)
+	}
+	return oldValue.TokenPrefix, nil
+}
+
+// ClearTokenPrefix clears the value of the "token_prefix" field.
+func (m *MCPCallLogMutation) ClearTokenPrefix() {
+	m.token_prefix = nil
+	m.clearedFields[mcpcalllog.FieldTokenPrefix] = struct{}{}
+}
+
+// TokenPrefixCleared returns if the "token_prefix" field was cleared in this mutation.
+func (m *MCPCallLogMutation) TokenPrefixCleared() bool {
+	_, ok := m.clearedFields[mcpcalllog.FieldTokenPrefix]
+	return ok
+}
+
+// ResetTokenPrefix resets all changes to the "token_prefix" field.
+func (m *MCPCallLogMutation) ResetTokenPrefix() {
+	m.token_prefix = nil
+	delete(m.clearedFields, mcpcalllog.FieldTokenPrefix)
+}
+
+// SetSessionID sets the "session_id" field.
+func (m *MCPCallLogMutation) SetSessionID(s string) {
+	m.session_id = &s
+}
+
+// SessionID returns the value of the "session_id" field in the mutation.
+func (m *MCPCallLogMutation) SessionID() (r string, exists bool) {
+	v := m.session_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSessionID returns the old "session_id" field's value of the MCPCallLog entity.
+// If the MCPCallLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPCallLogMutation) OldSessionID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSessionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSessionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSessionID: %w", err)
+	}
+	return oldValue.SessionID, nil
+}
+
+// ClearSessionID clears the value of the "session_id" field.
+func (m *MCPCallLogMutation) ClearSessionID() {
+	m.session_id = nil
+	m.clearedFields[mcpcalllog.FieldSessionID] = struct{}{}
+}
+
+// SessionIDCleared returns if the "session_id" field was cleared in this mutation.
+func (m *MCPCallLogMutation) SessionIDCleared() bool {
+	_, ok := m.clearedFields[mcpcalllog.FieldSessionID]
+	return ok
+}
+
+// ResetSessionID resets all changes to the "session_id" field.
+func (m *MCPCallLogMutation) ResetSessionID() {
+	m.session_id = nil
+	delete(m.clearedFields, mcpcalllog.FieldSessionID)
+}
+
+// SetRequestID sets the "request_id" field.
+func (m *MCPCallLogMutation) SetRequestID(s string) {
+	m.request_id = &s
+}
+
+// RequestID returns the value of the "request_id" field in the mutation.
+func (m *MCPCallLogMutation) RequestID() (r string, exists bool) {
+	v := m.request_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestID returns the old "request_id" field's value of the MCPCallLog entity.
+// If the MCPCallLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPCallLogMutation) OldRequestID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestID: %w", err)
+	}
+	return oldValue.RequestID, nil
+}
+
+// ClearRequestID clears the value of the "request_id" field.
+func (m *MCPCallLogMutation) ClearRequestID() {
+	m.request_id = nil
+	m.clearedFields[mcpcalllog.FieldRequestID] = struct{}{}
+}
+
+// RequestIDCleared returns if the "request_id" field was cleared in this mutation.
+func (m *MCPCallLogMutation) RequestIDCleared() bool {
+	_, ok := m.clearedFields[mcpcalllog.FieldRequestID]
+	return ok
+}
+
+// ResetRequestID resets all changes to the "request_id" field.
+func (m *MCPCallLogMutation) ResetRequestID() {
+	m.request_id = nil
+	delete(m.clearedFields, mcpcalllog.FieldRequestID)
+}
+
+// SetStatus sets the "status" field.
+func (m *MCPCallLogMutation) SetStatus(value mcpcalllog.Status) {
+	m.status = &value
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *MCPCallLogMutation) Status() (r mcpcalllog.Status, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the MCPCallLog entity.
+// If the MCPCallLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPCallLogMutation) OldStatus(ctx context.Context) (v mcpcalllog.Status, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *MCPCallLogMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetStatusCode sets the "status_code" field.
+func (m *MCPCallLogMutation) SetStatusCode(i int) {
+	m.status_code = &i
+	m.addstatus_code = nil
+}
+
+// StatusCode returns the value of the "status_code" field in the mutation.
+func (m *MCPCallLogMutation) StatusCode() (r int, exists bool) {
+	v := m.status_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatusCode returns the old "status_code" field's value of the MCPCallLog entity.
+// If the MCPCallLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPCallLogMutation) OldStatusCode(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatusCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatusCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatusCode: %w", err)
+	}
+	return oldValue.StatusCode, nil
+}
+
+// AddStatusCode adds i to the "status_code" field.
+func (m *MCPCallLogMutation) AddStatusCode(i int) {
+	if m.addstatus_code != nil {
+		*m.addstatus_code += i
+	} else {
+		m.addstatus_code = &i
+	}
+}
+
+// AddedStatusCode returns the value that was added to the "status_code" field in this mutation.
+func (m *MCPCallLogMutation) AddedStatusCode() (r int, exists bool) {
+	v := m.addstatus_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearStatusCode clears the value of the "status_code" field.
+func (m *MCPCallLogMutation) ClearStatusCode() {
+	m.status_code = nil
+	m.addstatus_code = nil
+	m.clearedFields[mcpcalllog.FieldStatusCode] = struct{}{}
+}
+
+// StatusCodeCleared returns if the "status_code" field was cleared in this mutation.
+func (m *MCPCallLogMutation) StatusCodeCleared() bool {
+	_, ok := m.clearedFields[mcpcalllog.FieldStatusCode]
+	return ok
+}
+
+// ResetStatusCode resets all changes to the "status_code" field.
+func (m *MCPCallLogMutation) ResetStatusCode() {
+	m.status_code = nil
+	m.addstatus_code = nil
+	delete(m.clearedFields, mcpcalllog.FieldStatusCode)
+}
+
+// SetDurationMs sets the "duration_ms" field.
+func (m *MCPCallLogMutation) SetDurationMs(i int64) {
+	m.duration_ms = &i
+	m.addduration_ms = nil
+}
+
+// DurationMs returns the value of the "duration_ms" field in the mutation.
+func (m *MCPCallLogMutation) DurationMs() (r int64, exists bool) {
+	v := m.duration_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDurationMs returns the old "duration_ms" field's value of the MCPCallLog entity.
+// If the MCPCallLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPCallLogMutation) OldDurationMs(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDurationMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDurationMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDurationMs: %w", err)
+	}
+	return oldValue.DurationMs, nil
+}
+
+// AddDurationMs adds i to the "duration_ms" field.
+func (m *MCPCallLogMutation) AddDurationMs(i int64) {
+	if m.addduration_ms != nil {
+		*m.addduration_ms += i
+	} else {
+		m.addduration_ms = &i
+	}
+}
+
+// AddedDurationMs returns the value that was added to the "duration_ms" field in this mutation.
+func (m *MCPCallLogMutation) AddedDurationMs() (r int64, exists bool) {
+	v := m.addduration_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDurationMs resets all changes to the "duration_ms" field.
+func (m *MCPCallLogMutation) ResetDurationMs() {
+	m.duration_ms = nil
+	m.addduration_ms = nil
+}
+
+// SetError sets the "error" field.
+func (m *MCPCallLogMutation) SetError(s string) {
+	m.error = &s
+}
+
+// Error returns the value of the "error" field in the mutation.
+func (m *MCPCallLogMutation) Error() (r string, exists bool) {
+	v := m.error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldError returns the old "error" field's value of the MCPCallLog entity.
+// If the MCPCallLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPCallLogMutation) OldError(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldError: %w", err)
+	}
+	return oldValue.Error, nil
+}
+
+// ClearError clears the value of the "error" field.
+func (m *MCPCallLogMutation) ClearError() {
+	m.error = nil
+	m.clearedFields[mcpcalllog.FieldError] = struct{}{}
+}
+
+// ErrorCleared returns if the "error" field was cleared in this mutation.
+func (m *MCPCallLogMutation) ErrorCleared() bool {
+	_, ok := m.clearedFields[mcpcalllog.FieldError]
+	return ok
+}
+
+// ResetError resets all changes to the "error" field.
+func (m *MCPCallLogMutation) ResetError() {
+	m.error = nil
+	delete(m.clearedFields, mcpcalllog.FieldError)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *MCPCallLogMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *MCPCallLogMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the MCPCallLog entity.
+// If the MCPCallLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPCallLogMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *MCPCallLogMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// Where appends a list predicates to the MCPCallLogMutation builder.
+func (m *MCPCallLogMutation) Where(ps ...predicate.MCPCallLog) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the MCPCallLogMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *MCPCallLogMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.MCPCallLog, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *MCPCallLogMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *MCPCallLogMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (MCPCallLog).
+func (m *MCPCallLogMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *MCPCallLogMutation) Fields() []string {
+	fields := make([]string, 0, 13)
+	if m.source != nil {
+		fields = append(fields, mcpcalllog.FieldSource)
+	}
+	if m.transport != nil {
+		fields = append(fields, mcpcalllog.FieldTransport)
+	}
+	if m.method != nil {
+		fields = append(fields, mcpcalllog.FieldMethod)
+	}
+	if m.target != nil {
+		fields = append(fields, mcpcalllog.FieldTarget)
+	}
+	if m.provider_slug != nil {
+		fields = append(fields, mcpcalllog.FieldProviderSlug)
+	}
+	if m.token_prefix != nil {
+		fields = append(fields, mcpcalllog.FieldTokenPrefix)
+	}
+	if m.session_id != nil {
+		fields = append(fields, mcpcalllog.FieldSessionID)
+	}
+	if m.request_id != nil {
+		fields = append(fields, mcpcalllog.FieldRequestID)
+	}
+	if m.status != nil {
+		fields = append(fields, mcpcalllog.FieldStatus)
+	}
+	if m.status_code != nil {
+		fields = append(fields, mcpcalllog.FieldStatusCode)
+	}
+	if m.duration_ms != nil {
+		fields = append(fields, mcpcalllog.FieldDurationMs)
+	}
+	if m.error != nil {
+		fields = append(fields, mcpcalllog.FieldError)
+	}
+	if m.created_at != nil {
+		fields = append(fields, mcpcalllog.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *MCPCallLogMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case mcpcalllog.FieldSource:
+		return m.Source()
+	case mcpcalllog.FieldTransport:
+		return m.Transport()
+	case mcpcalllog.FieldMethod:
+		return m.Method()
+	case mcpcalllog.FieldTarget:
+		return m.Target()
+	case mcpcalllog.FieldProviderSlug:
+		return m.ProviderSlug()
+	case mcpcalllog.FieldTokenPrefix:
+		return m.TokenPrefix()
+	case mcpcalllog.FieldSessionID:
+		return m.SessionID()
+	case mcpcalllog.FieldRequestID:
+		return m.RequestID()
+	case mcpcalllog.FieldStatus:
+		return m.Status()
+	case mcpcalllog.FieldStatusCode:
+		return m.StatusCode()
+	case mcpcalllog.FieldDurationMs:
+		return m.DurationMs()
+	case mcpcalllog.FieldError:
+		return m.Error()
+	case mcpcalllog.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *MCPCallLogMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case mcpcalllog.FieldSource:
+		return m.OldSource(ctx)
+	case mcpcalllog.FieldTransport:
+		return m.OldTransport(ctx)
+	case mcpcalllog.FieldMethod:
+		return m.OldMethod(ctx)
+	case mcpcalllog.FieldTarget:
+		return m.OldTarget(ctx)
+	case mcpcalllog.FieldProviderSlug:
+		return m.OldProviderSlug(ctx)
+	case mcpcalllog.FieldTokenPrefix:
+		return m.OldTokenPrefix(ctx)
+	case mcpcalllog.FieldSessionID:
+		return m.OldSessionID(ctx)
+	case mcpcalllog.FieldRequestID:
+		return m.OldRequestID(ctx)
+	case mcpcalllog.FieldStatus:
+		return m.OldStatus(ctx)
+	case mcpcalllog.FieldStatusCode:
+		return m.OldStatusCode(ctx)
+	case mcpcalllog.FieldDurationMs:
+		return m.OldDurationMs(ctx)
+	case mcpcalllog.FieldError:
+		return m.OldError(ctx)
+	case mcpcalllog.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown MCPCallLog field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MCPCallLogMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case mcpcalllog.FieldSource:
+		v, ok := value.(mcpcalllog.Source)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSource(v)
+		return nil
+	case mcpcalllog.FieldTransport:
+		v, ok := value.(mcpcalllog.Transport)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTransport(v)
+		return nil
+	case mcpcalllog.FieldMethod:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMethod(v)
+		return nil
+	case mcpcalllog.FieldTarget:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTarget(v)
+		return nil
+	case mcpcalllog.FieldProviderSlug:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProviderSlug(v)
+		return nil
+	case mcpcalllog.FieldTokenPrefix:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTokenPrefix(v)
+		return nil
+	case mcpcalllog.FieldSessionID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSessionID(v)
+		return nil
+	case mcpcalllog.FieldRequestID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestID(v)
+		return nil
+	case mcpcalllog.FieldStatus:
+		v, ok := value.(mcpcalllog.Status)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case mcpcalllog.FieldStatusCode:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatusCode(v)
+		return nil
+	case mcpcalllog.FieldDurationMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDurationMs(v)
+		return nil
+	case mcpcalllog.FieldError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetError(v)
+		return nil
+	case mcpcalllog.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown MCPCallLog field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *MCPCallLogMutation) AddedFields() []string {
+	var fields []string
+	if m.addstatus_code != nil {
+		fields = append(fields, mcpcalllog.FieldStatusCode)
+	}
+	if m.addduration_ms != nil {
+		fields = append(fields, mcpcalllog.FieldDurationMs)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *MCPCallLogMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case mcpcalllog.FieldStatusCode:
+		return m.AddedStatusCode()
+	case mcpcalllog.FieldDurationMs:
+		return m.AddedDurationMs()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MCPCallLogMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case mcpcalllog.FieldStatusCode:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStatusCode(v)
+		return nil
+	case mcpcalllog.FieldDurationMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDurationMs(v)
+		return nil
+	}
+	return fmt.Errorf("unknown MCPCallLog numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *MCPCallLogMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(mcpcalllog.FieldProviderSlug) {
+		fields = append(fields, mcpcalllog.FieldProviderSlug)
+	}
+	if m.FieldCleared(mcpcalllog.FieldTokenPrefix) {
+		fields = append(fields, mcpcalllog.FieldTokenPrefix)
+	}
+	if m.FieldCleared(mcpcalllog.FieldSessionID) {
+		fields = append(fields, mcpcalllog.FieldSessionID)
+	}
+	if m.FieldCleared(mcpcalllog.FieldRequestID) {
+		fields = append(fields, mcpcalllog.FieldRequestID)
+	}
+	if m.FieldCleared(mcpcalllog.FieldStatusCode) {
+		fields = append(fields, mcpcalllog.FieldStatusCode)
+	}
+	if m.FieldCleared(mcpcalllog.FieldError) {
+		fields = append(fields, mcpcalllog.FieldError)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *MCPCallLogMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *MCPCallLogMutation) ClearField(name string) error {
+	switch name {
+	case mcpcalllog.FieldProviderSlug:
+		m.ClearProviderSlug()
+		return nil
+	case mcpcalllog.FieldTokenPrefix:
+		m.ClearTokenPrefix()
+		return nil
+	case mcpcalllog.FieldSessionID:
+		m.ClearSessionID()
+		return nil
+	case mcpcalllog.FieldRequestID:
+		m.ClearRequestID()
+		return nil
+	case mcpcalllog.FieldStatusCode:
+		m.ClearStatusCode()
+		return nil
+	case mcpcalllog.FieldError:
+		m.ClearError()
+		return nil
+	}
+	return fmt.Errorf("unknown MCPCallLog nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *MCPCallLogMutation) ResetField(name string) error {
+	switch name {
+	case mcpcalllog.FieldSource:
+		m.ResetSource()
+		return nil
+	case mcpcalllog.FieldTransport:
+		m.ResetTransport()
+		return nil
+	case mcpcalllog.FieldMethod:
+		m.ResetMethod()
+		return nil
+	case mcpcalllog.FieldTarget:
+		m.ResetTarget()
+		return nil
+	case mcpcalllog.FieldProviderSlug:
+		m.ResetProviderSlug()
+		return nil
+	case mcpcalllog.FieldTokenPrefix:
+		m.ResetTokenPrefix()
+		return nil
+	case mcpcalllog.FieldSessionID:
+		m.ResetSessionID()
+		return nil
+	case mcpcalllog.FieldRequestID:
+		m.ResetRequestID()
+		return nil
+	case mcpcalllog.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case mcpcalllog.FieldStatusCode:
+		m.ResetStatusCode()
+		return nil
+	case mcpcalllog.FieldDurationMs:
+		m.ResetDurationMs()
+		return nil
+	case mcpcalllog.FieldError:
+		m.ResetError()
+		return nil
+	case mcpcalllog.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown MCPCallLog field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *MCPCallLogMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *MCPCallLogMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *MCPCallLogMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *MCPCallLogMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *MCPCallLogMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *MCPCallLogMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *MCPCallLogMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown MCPCallLog unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *MCPCallLogMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown MCPCallLog edge %s", name)
+}
 
 // MCPTokenMutation represents an operation that mutates the MCPToken nodes in the graph.
 type MCPTokenMutation struct {

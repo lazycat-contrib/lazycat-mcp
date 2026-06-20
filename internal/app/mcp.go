@@ -15,6 +15,7 @@ func (a *App) newMCPServer() *mcpserver.MCPServer {
 	svr := mcpserver.NewMCPServer(
 		"LazyCat MCP",
 		info.Version,
+		mcpserver.WithToolHandlerMiddleware(a.mcpCallLogToolMiddleware()),
 		mcpserver.WithLogging(),
 		mcpserver.WithRecovery(),
 		mcpserver.WithToolCapabilities(true),
@@ -22,10 +23,12 @@ func (a *App) newMCPServer() *mcpserver.MCPServer {
 	)
 
 	tools := []mcpserver.ServerTool{a.providerListTool()}
-	tools = append(tools, a.kit.DomainKits()...)
-	if a.kit.Available() {
-		tools = append(tools, a.kit.PowerKits()...)
-		tools = append(tools, a.kit.DeviceKits()...)
+	if a.kit != nil {
+		tools = append(tools, a.kit.DomainKits()...)
+		if a.kit.Available() {
+			tools = append(tools, a.kit.PowerKits()...)
+			tools = append(tools, a.kit.DeviceKits()...)
+		}
 	}
 	svr.AddTools(tools...)
 	return svr
@@ -46,6 +49,12 @@ func (a *App) providerListTool() mcpserver.ServerTool {
 					"name":      "LazyCat MCP",
 					"endpoint":  "/mcp",
 					"transport": "streamable_http",
+				},
+				"aggregate": map[string]any{
+					"endpoint":    "/mcp",
+					"transport":   "streamable_http",
+					"tool_naming": "<provider_slug>__<upstream_tool_name>",
+					"description": "Enabled upstream provider tools are exposed directly in this server's tools/list with a namespaced name.",
 				},
 				"providers": providers,
 			}

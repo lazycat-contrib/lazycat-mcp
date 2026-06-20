@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"lazycat-mcp/ent/mcpcalllog"
 	"lazycat-mcp/ent/mcptoken"
 	"lazycat-mcp/ent/upstreamprovider"
 	"reflect"
@@ -74,6 +75,7 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			mcpcalllog.Table:       mcpcalllog.ValidColumn,
 			mcptoken.Table:         mcptoken.ValidColumn,
 			upstreamprovider.Table: upstreamprovider.ValidColumn,
 		})

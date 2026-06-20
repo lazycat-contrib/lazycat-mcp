@@ -57,6 +57,12 @@ func (a *App) handleAPI(w http.ResponseWriter, r *http.Request) {
 		a.handleCreateProvider(w, r)
 	case strings.HasPrefix(path, "/providers/"):
 		a.handleProviderByID(w, r, strings.TrimPrefix(path, "/providers/"))
+	case path == "/mcp-logs" && r.Method == http.MethodGet:
+		a.handleListMCPLogs(w, r)
+	case path == "/mcp-logs" && r.Method == http.MethodDelete:
+		a.handleClearMCPLogs(w, r)
+	case path == "/mcp-logs/cleanup" && r.Method == http.MethodPost:
+		a.handleCleanupMCPLogs(w, r)
 	default:
 		http.NotFound(w, r)
 	}
@@ -70,18 +76,21 @@ func (a *App) handleStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	tokenCount, _ := a.db.MCPToken.Query().Count(r.Context())
 	providerCount, _ := a.db.UpstreamProvider.Query().Count(r.Context())
+	mcpLogCount, _ := a.db.MCPCallLog.Query().Count(r.Context())
 	writeJSON(w, http.StatusOK, map[string]any{
-		"app_id":             selfPackageID,
-		"resource_root":      a.resources.Root(),
-		"mcp_endpoint":       "/mcp",
-		"skill_install_path": SelfSkillInstallPath(),
-		"version":            build.Version,
-		"commit":             build.Commit,
-		"build_time":         build.BuildTime,
-		"has_user_ticket":    hasTicket,
-		"user_ticket_seen":   a.tickets.UpdatedAt(),
-		"token_count":        tokenCount,
-		"provider_count":     providerCount,
+		"app_id":                 selfPackageID,
+		"resource_root":          a.resources.Root(),
+		"mcp_endpoint":           "/mcp",
+		"skill_install_path":     SelfSkillInstallPath(),
+		"version":                build.Version,
+		"commit":                 build.Commit,
+		"build_time":             build.BuildTime,
+		"has_user_ticket":        hasTicket,
+		"user_ticket_seen":       a.tickets.UpdatedAt(),
+		"token_count":            tokenCount,
+		"provider_count":         providerCount,
+		"mcp_log_count":          mcpLogCount,
+		"mcp_log_retention_days": a.cfg.MCPLogRetentionDays,
 	})
 }
 
@@ -262,6 +271,7 @@ func (a *App) handleCreateProvider(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, statusFromProviderError(err), err.Error())
 		return
 	}
+	a.refreshUpstreamToolsBestEffort(r.Context())
 	writeJSON(w, http.StatusCreated, map[string]any{"provider": provider})
 }
 
@@ -283,16 +293,77 @@ func (a *App) handleProviderByID(w http.ResponseWriter, r *http.Request, rawID s
 			writeAPIError(w, statusFromProviderError(err), err.Error())
 			return
 		}
+		a.refreshUpstreamToolsBestEffort(r.Context())
 		writeJSON(w, http.StatusOK, map[string]any{"provider": provider})
 	case http.MethodDelete:
 		if err := a.providers.Delete(r.Context(), id); err != nil {
 			writeAPIError(w, statusFromEntError(err), err.Error())
 			return
 		}
+		a.refreshUpstreamToolsBestEffort(r.Context())
 		w.WriteHeader(http.StatusNoContent)
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
+}
+
+func (a *App) handleListMCPLogs(w http.ResponseWriter, r *http.Request) {
+	if a.mcpLogs == nil {
+		writeAPIError(w, http.StatusServiceUnavailable, "mcp call log service is unavailable")
+		return
+	}
+	limit := defaultCallLogLimit
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil {
+			writeAPIError(w, http.StatusBadRequest, "invalid log limit")
+			return
+		}
+		limit = parsed
+	}
+	logs, err := a.mcpLogs.List(r.Context(), MCPCallLogFilter{
+		Limit:        limit,
+		Source:       r.URL.Query().Get("source"),
+		Status:       r.URL.Query().Get("status"),
+		ProviderSlug: r.URL.Query().Get("provider_slug"),
+	})
+	if err != nil {
+		writeAPIError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"logs":           logs,
+		"retention_days": a.cfg.MCPLogRetentionDays,
+	})
+}
+
+func (a *App) handleClearMCPLogs(w http.ResponseWriter, r *http.Request) {
+	if a.mcpLogs == nil {
+		writeAPIError(w, http.StatusServiceUnavailable, "mcp call log service is unavailable")
+		return
+	}
+	deleted, err := a.mcpLogs.Clear(r.Context())
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"deleted": deleted})
+}
+
+func (a *App) handleCleanupMCPLogs(w http.ResponseWriter, r *http.Request) {
+	if a.mcpLogs == nil {
+		writeAPIError(w, http.StatusServiceUnavailable, "mcp call log service is unavailable")
+		return
+	}
+	deleted, err := a.mcpLogs.Cleanup(r.Context(), time.Now())
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"deleted":        deleted,
+		"retention_days": a.cfg.MCPLogRetentionDays,
+	})
 }
 
 func readJSON(r *http.Request, v any) error {

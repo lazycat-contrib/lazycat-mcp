@@ -11,6 +11,7 @@ import (
 
 	"lazycat-mcp/ent/migrate"
 
+	"lazycat-mcp/ent/mcpcalllog"
 	"lazycat-mcp/ent/mcptoken"
 	"lazycat-mcp/ent/upstreamprovider"
 
@@ -24,6 +25,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// MCPCallLog is the client for interacting with the MCPCallLog builders.
+	MCPCallLog *MCPCallLogClient
 	// MCPToken is the client for interacting with the MCPToken builders.
 	MCPToken *MCPTokenClient
 	// UpstreamProvider is the client for interacting with the UpstreamProvider builders.
@@ -39,6 +42,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.MCPCallLog = NewMCPCallLogClient(c.config)
 	c.MCPToken = NewMCPTokenClient(c.config)
 	c.UpstreamProvider = NewUpstreamProviderClient(c.config)
 }
@@ -133,6 +137,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:              ctx,
 		config:           cfg,
+		MCPCallLog:       NewMCPCallLogClient(cfg),
 		MCPToken:         NewMCPTokenClient(cfg),
 		UpstreamProvider: NewUpstreamProviderClient(cfg),
 	}, nil
@@ -154,6 +159,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:              ctx,
 		config:           cfg,
+		MCPCallLog:       NewMCPCallLogClient(cfg),
 		MCPToken:         NewMCPTokenClient(cfg),
 		UpstreamProvider: NewUpstreamProviderClient(cfg),
 	}, nil
@@ -162,7 +168,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		MCPToken.
+//		MCPCallLog.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -184,6 +190,7 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.MCPCallLog.Use(hooks...)
 	c.MCPToken.Use(hooks...)
 	c.UpstreamProvider.Use(hooks...)
 }
@@ -191,6 +198,7 @@ func (c *Client) Use(hooks ...Hook) {
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
+	c.MCPCallLog.Intercept(interceptors...)
 	c.MCPToken.Intercept(interceptors...)
 	c.UpstreamProvider.Intercept(interceptors...)
 }
@@ -198,12 +206,147 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *MCPCallLogMutation:
+		return c.MCPCallLog.mutate(ctx, m)
 	case *MCPTokenMutation:
 		return c.MCPToken.mutate(ctx, m)
 	case *UpstreamProviderMutation:
 		return c.UpstreamProvider.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// MCPCallLogClient is a client for the MCPCallLog schema.
+type MCPCallLogClient struct {
+	config
+}
+
+// NewMCPCallLogClient returns a client for the MCPCallLog from the given config.
+func NewMCPCallLogClient(c config) *MCPCallLogClient {
+	return &MCPCallLogClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `mcpcalllog.Hooks(f(g(h())))`.
+func (c *MCPCallLogClient) Use(hooks ...Hook) {
+	c.hooks.MCPCallLog = append(c.hooks.MCPCallLog, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `mcpcalllog.Intercept(f(g(h())))`.
+func (c *MCPCallLogClient) Intercept(interceptors ...Interceptor) {
+	c.inters.MCPCallLog = append(c.inters.MCPCallLog, interceptors...)
+}
+
+// Create returns a builder for creating a MCPCallLog entity.
+func (c *MCPCallLogClient) Create() *MCPCallLogCreate {
+	mutation := newMCPCallLogMutation(c.config, OpCreate)
+	return &MCPCallLogCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of MCPCallLog entities.
+func (c *MCPCallLogClient) CreateBulk(builders ...*MCPCallLogCreate) *MCPCallLogCreateBulk {
+	return &MCPCallLogCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MCPCallLogClient) MapCreateBulk(slice any, setFunc func(*MCPCallLogCreate, int)) *MCPCallLogCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MCPCallLogCreateBulk{err: fmt.Errorf("calling to MCPCallLogClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MCPCallLogCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MCPCallLogCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for MCPCallLog.
+func (c *MCPCallLogClient) Update() *MCPCallLogUpdate {
+	mutation := newMCPCallLogMutation(c.config, OpUpdate)
+	return &MCPCallLogUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MCPCallLogClient) UpdateOne(_m *MCPCallLog) *MCPCallLogUpdateOne {
+	mutation := newMCPCallLogMutation(c.config, OpUpdateOne, withMCPCallLog(_m))
+	return &MCPCallLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MCPCallLogClient) UpdateOneID(id int) *MCPCallLogUpdateOne {
+	mutation := newMCPCallLogMutation(c.config, OpUpdateOne, withMCPCallLogID(id))
+	return &MCPCallLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for MCPCallLog.
+func (c *MCPCallLogClient) Delete() *MCPCallLogDelete {
+	mutation := newMCPCallLogMutation(c.config, OpDelete)
+	return &MCPCallLogDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MCPCallLogClient) DeleteOne(_m *MCPCallLog) *MCPCallLogDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MCPCallLogClient) DeleteOneID(id int) *MCPCallLogDeleteOne {
+	builder := c.Delete().Where(mcpcalllog.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MCPCallLogDeleteOne{builder}
+}
+
+// Query returns a query builder for MCPCallLog.
+func (c *MCPCallLogClient) Query() *MCPCallLogQuery {
+	return &MCPCallLogQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMCPCallLog},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a MCPCallLog entity by its id.
+func (c *MCPCallLogClient) Get(ctx context.Context, id int) (*MCPCallLog, error) {
+	return c.Query().Where(mcpcalllog.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MCPCallLogClient) GetX(ctx context.Context, id int) *MCPCallLog {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *MCPCallLogClient) Hooks() []Hook {
+	return c.hooks.MCPCallLog
+}
+
+// Interceptors returns the client interceptors.
+func (c *MCPCallLogClient) Interceptors() []Interceptor {
+	return c.inters.MCPCallLog
+}
+
+func (c *MCPCallLogClient) mutate(ctx context.Context, m *MCPCallLogMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MCPCallLogCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MCPCallLogUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MCPCallLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MCPCallLogDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown MCPCallLog mutation op: %q", m.Op())
 	}
 }
 
@@ -476,9 +619,9 @@ func (c *UpstreamProviderClient) mutate(ctx context.Context, m *UpstreamProvider
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		MCPToken, UpstreamProvider []ent.Hook
+		MCPCallLog, MCPToken, UpstreamProvider []ent.Hook
 	}
 	inters struct {
-		MCPToken, UpstreamProvider []ent.Interceptor
+		MCPCallLog, MCPToken, UpstreamProvider []ent.Interceptor
 	}
 )

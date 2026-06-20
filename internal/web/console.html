@@ -139,11 +139,28 @@
               </div>
             </div>
             <div class="item">
-              <h3 data-i18n="selfMcp">本程序 MCP</h3>
+              <h3 data-i18n="selfMcp">聚合 MCP</h3>
               <div class="mono" id="selfMcpPath">/mcp</div>
               <div class="mono muted" id="buildInfo">-</div>
               <span class="pill warn">Token</span>
             </div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="logTitle">
+          <div class="panel-head">
+            <div>
+              <h2 id="logTitle" data-i18n="mcpCallLogs">MCP 调用日志</h2>
+              <p class="muted" id="logSummary">-</p>
+            </div>
+            <div class="actions">
+              <button class="ghost compact" id="reloadLogsBtn" type="button" data-i18n="refresh">刷新</button>
+              <button class="ghost compact" id="cleanupLogsBtn" type="button" data-i18n="cleanupExpired">清理过期</button>
+              <button class="danger compact" id="clearLogsBtn" type="button" data-i18n="clearLogs">清空</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="mcpLogList" class="list log-list"></div>
           </div>
         </section>
       </div>
@@ -187,7 +204,7 @@
         newToken: "新 Token",
         copy: "复制",
         skillInstallPath: "Skills 安装路径",
-        selfMcp: "本程序 MCP",
+        selfMcp: "聚合 MCP",
         ticketCaptured: "用户票据已捕获",
         waitingTicket: "等待用户票据",
         tokenCount: "Token {count}",
@@ -209,6 +226,21 @@
         stopped: "停用",
         upstreamCustom: "自定义",
         upstreamLazycat: "懒猫",
+        mcpCallLogs: "MCP 调用日志",
+        cleanupExpired: "清理过期",
+        clearLogs: "清空",
+        noLogs: "还没有调用日志",
+        logCount: "日志 {count}",
+        retentionDays: "保留 {days} 天",
+        retentionDisabled: "未启用自动清理",
+        sourceLocal: "本机",
+        sourceUpstream: "上游",
+        statusSuccess: "成功",
+        statusError: "错误",
+        durationMs: "{ms} ms",
+        cleanedLogs: "已清理 {count} 条",
+        clearedLogs: "已清空 {count} 条",
+        confirmClearLogs: "确定清空所有 MCP 调用日志？",
         copied: "已复制",
         copyFailed: "复制失败",
         saved: "已保存"
@@ -246,7 +278,7 @@
         newToken: "New Token",
         copy: "Copy",
         skillInstallPath: "Skills install path",
-        selfMcp: "This app MCP",
+        selfMcp: "Aggregate MCP",
         ticketCaptured: "User ticket captured",
         waitingTicket: "Waiting for user ticket",
         tokenCount: "Token {count}",
@@ -268,6 +300,21 @@
         stopped: "Stopped",
         upstreamCustom: "Custom",
         upstreamLazycat: "LazyCat",
+        mcpCallLogs: "MCP Call Logs",
+        cleanupExpired: "Clean expired",
+        clearLogs: "Clear",
+        noLogs: "No call logs yet",
+        logCount: "Logs {count}",
+        retentionDays: "Keep {days} days",
+        retentionDisabled: "Automatic cleanup disabled",
+        sourceLocal: "Local",
+        sourceUpstream: "Upstream",
+        statusSuccess: "Success",
+        statusError: "Error",
+        durationMs: "{ms} ms",
+        cleanedLogs: "Cleaned {count}",
+        clearedLogs: "Cleared {count}",
+        confirmClearLogs: "Clear all MCP call logs?",
         copied: "Copied",
         copyFailed: "Copy failed",
         saved: "Saved"
@@ -279,6 +326,8 @@
       apps: [],
       tokens: [],
       providers: [],
+      logs: [],
+      logRetentionDays: 30,
       providerMode: "lazycat"
     };
 
@@ -362,16 +411,19 @@
     }
 
     async function loadAll() {
-      const [status, apps, tokens, providers] = await Promise.all([
+      const [status, apps, tokens, providers, logs] = await Promise.all([
         api("/api/status"),
         api("/api/apps"),
         api("/api/tokens"),
-        api("/api/providers")
+        api("/api/providers"),
+        api("/api/mcp-logs?limit=50")
       ]);
       state.status = status;
       state.apps = apps.apps || [];
       state.tokens = tokens.tokens || [];
       state.providers = providers.providers || [];
+      state.logs = logs.logs || [];
+      state.logRetentionDays = logs.retention_days ?? status.mcp_log_retention_days ?? 30;
       render();
     }
 
@@ -382,6 +434,7 @@
       renderTokens();
       renderProviders();
       renderSkill();
+      renderMCPLogs();
     }
 
     function renderProviderMode() {
@@ -424,6 +477,7 @@
       }
       box.appendChild(pill(t("tokenCount", { count: state.tokens.length }), "info"));
       box.appendChild(pill(t("providerCount", { count: state.providers.length }), "info"));
+      box.appendChild(pill(t("logCount", { count: state.status ? state.status.mcp_log_count || state.logs.length : state.logs.length }), "info"));
     }
 
     function renderApps() {
@@ -582,6 +636,50 @@
       $("skillPath").textContent = path ? location.origin + path : "-";
       $("selfMcpPath").textContent = state.status ? location.origin + state.status.mcp_endpoint : "/mcp";
       $("buildInfo").textContent = state.status ? formatBuildInfo(state.status) : "-";
+    }
+
+    function renderMCPLogs() {
+      const summary = state.logRetentionDays > 0
+        ? t("retentionDays", { days: state.logRetentionDays })
+        : t("retentionDisabled");
+      $("logSummary").textContent = `${t("logCount", { count: state.logs.length })} · ${summary}`;
+      const list = $("mcpLogList");
+      list.replaceChildren();
+      if (state.logs.length === 0) {
+        list.appendChild(empty(t("noLogs")));
+        return;
+      }
+      state.logs.forEach((log) => {
+        const item = document.createElement("div");
+        item.className = "item log-item";
+        const row = document.createElement("div");
+        row.className = "item-row";
+        const left = document.createElement("div");
+        const title = document.createElement("h3");
+        title.textContent = log.provider_slug
+          ? `${log.method} → ${log.provider_slug}/${log.target}`
+          : log.method;
+        const meta = document.createElement("div");
+        meta.className = "mono muted";
+        const statusCode = log.status_code ? ` · HTTP ${log.status_code}` : "";
+        meta.textContent = `${formatBuildTime(log.created_at)} · ${t("durationMs", { ms: log.duration_ms || 0 })}${statusCode}`;
+        left.append(title, meta);
+        const badges = document.createElement("div");
+        badges.className = "actions log-badges";
+        badges.append(
+          pill(log.source === "upstream" ? t("sourceUpstream") : t("sourceLocal"), "info"),
+          pill(log.status === "error" ? t("statusError") : t("statusSuccess"), log.status === "error" ? "warn" : "ok")
+        );
+        row.append(left, badges);
+        item.append(row);
+        if (log.error) {
+          const error = document.createElement("div");
+          error.className = "mono log-error";
+          error.textContent = log.error;
+          item.appendChild(error);
+        }
+        list.appendChild(item);
+      });
     }
 
     function updateProviderSubmitState() {
@@ -750,6 +848,27 @@
       await loadAll();
     }
 
+    async function reloadLogs() {
+      const data = await api("/api/mcp-logs?limit=50");
+      state.logs = data.logs || [];
+      state.logRetentionDays = data.retention_days ?? state.logRetentionDays;
+      renderMCPLogs();
+      renderStatus();
+    }
+
+    async function cleanupLogs() {
+      const data = await api("/api/mcp-logs/cleanup", { method: "POST", body: "{}" });
+      showToast(t("cleanedLogs", { count: data.deleted || 0 }));
+      await loadAll();
+    }
+
+    async function clearLogs() {
+      if (!window.confirm(t("confirmClearLogs"))) return;
+      const data = await api("/api/mcp-logs", { method: "DELETE", headers: {} });
+      showToast(t("clearedLogs", { count: data.deleted || 0 }));
+      await loadAll();
+    }
+
     $("appSelect").addEventListener("change", applySelectedApp);
     $("resourceSelect").addEventListener("change", () => {
       const option = $("resourceSelect").selectedOptions[0];
@@ -764,6 +883,9 @@
     $("providerForm").addEventListener("submit", (event) => saveProvider(event).catch((err) => showToast(err.message)));
     $("tokenForm").addEventListener("submit", (event) => createToken(event).catch((err) => showToast(err.message)));
     $("reloadBtn").addEventListener("click", () => loadAll().catch((err) => showToast(err.message)));
+    $("reloadLogsBtn").addEventListener("click", () => reloadLogs().catch((err) => showToast(err.message)));
+    $("cleanupLogsBtn").addEventListener("click", () => cleanupLogs().catch((err) => showToast(err.message)));
+    $("clearLogsBtn").addEventListener("click", () => clearLogs().catch((err) => showToast(err.message)));
     $("copyTokenBtn").addEventListener("click", () => copyText($("tokenValue").textContent));
     $("copySkillBtn").addEventListener("click", () => copyText($("skillPath").textContent));
     document.querySelectorAll("[data-lang-option]").forEach((button) => {

@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"lazycat-mcp/ent/mcpcalllog"
 	"lazycat-mcp/ent/mcptoken"
 	"lazycat-mcp/ent/schema"
 	"lazycat-mcp/ent/upstreamprovider"
@@ -13,6 +14,78 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	mcpcalllogFields := schema.MCPCallLog{}.Fields()
+	_ = mcpcalllogFields
+	// mcpcalllogDescMethod is the schema descriptor for method field.
+	mcpcalllogDescMethod := mcpcalllogFields[2].Descriptor()
+	// mcpcalllog.MethodValidator is a validator for the "method" field. It is called by the builders before save.
+	mcpcalllog.MethodValidator = func() func(string) error {
+		validators := mcpcalllogDescMethod.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(method string) error {
+			for _, fn := range fns {
+				if err := fn(method); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// mcpcalllogDescTarget is the schema descriptor for target field.
+	mcpcalllogDescTarget := mcpcalllogFields[3].Descriptor()
+	// mcpcalllog.TargetValidator is a validator for the "target" field. It is called by the builders before save.
+	mcpcalllog.TargetValidator = func() func(string) error {
+		validators := mcpcalllogDescTarget.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(target string) error {
+			for _, fn := range fns {
+				if err := fn(target); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// mcpcalllogDescProviderSlug is the schema descriptor for provider_slug field.
+	mcpcalllogDescProviderSlug := mcpcalllogFields[4].Descriptor()
+	// mcpcalllog.ProviderSlugValidator is a validator for the "provider_slug" field. It is called by the builders before save.
+	mcpcalllog.ProviderSlugValidator = mcpcalllogDescProviderSlug.Validators[0].(func(string) error)
+	// mcpcalllogDescTokenPrefix is the schema descriptor for token_prefix field.
+	mcpcalllogDescTokenPrefix := mcpcalllogFields[5].Descriptor()
+	// mcpcalllog.TokenPrefixValidator is a validator for the "token_prefix" field. It is called by the builders before save.
+	mcpcalllog.TokenPrefixValidator = mcpcalllogDescTokenPrefix.Validators[0].(func(string) error)
+	// mcpcalllogDescSessionID is the schema descriptor for session_id field.
+	mcpcalllogDescSessionID := mcpcalllogFields[6].Descriptor()
+	// mcpcalllog.SessionIDValidator is a validator for the "session_id" field. It is called by the builders before save.
+	mcpcalllog.SessionIDValidator = mcpcalllogDescSessionID.Validators[0].(func(string) error)
+	// mcpcalllogDescRequestID is the schema descriptor for request_id field.
+	mcpcalllogDescRequestID := mcpcalllogFields[7].Descriptor()
+	// mcpcalllog.RequestIDValidator is a validator for the "request_id" field. It is called by the builders before save.
+	mcpcalllog.RequestIDValidator = mcpcalllogDescRequestID.Validators[0].(func(string) error)
+	// mcpcalllogDescStatusCode is the schema descriptor for status_code field.
+	mcpcalllogDescStatusCode := mcpcalllogFields[9].Descriptor()
+	// mcpcalllog.StatusCodeValidator is a validator for the "status_code" field. It is called by the builders before save.
+	mcpcalllog.StatusCodeValidator = mcpcalllogDescStatusCode.Validators[0].(func(int) error)
+	// mcpcalllogDescDurationMs is the schema descriptor for duration_ms field.
+	mcpcalllogDescDurationMs := mcpcalllogFields[10].Descriptor()
+	// mcpcalllog.DefaultDurationMs holds the default value on creation for the duration_ms field.
+	mcpcalllog.DefaultDurationMs = mcpcalllogDescDurationMs.Default.(int64)
+	// mcpcalllog.DurationMsValidator is a validator for the "duration_ms" field. It is called by the builders before save.
+	mcpcalllog.DurationMsValidator = mcpcalllogDescDurationMs.Validators[0].(func(int64) error)
+	// mcpcalllogDescError is the schema descriptor for error field.
+	mcpcalllogDescError := mcpcalllogFields[11].Descriptor()
+	// mcpcalllog.ErrorValidator is a validator for the "error" field. It is called by the builders before save.
+	mcpcalllog.ErrorValidator = mcpcalllogDescError.Validators[0].(func(string) error)
+	// mcpcalllogDescCreatedAt is the schema descriptor for created_at field.
+	mcpcalllogDescCreatedAt := mcpcalllogFields[12].Descriptor()
+	// mcpcalllog.DefaultCreatedAt holds the default value on creation for the created_at field.
+	mcpcalllog.DefaultCreatedAt = mcpcalllogDescCreatedAt.Default.(func() time.Time)
 	mcptokenFields := schema.MCPToken{}.Fields()
 	_ = mcptokenFields
 	// mcptokenDescName is the schema descriptor for name field.

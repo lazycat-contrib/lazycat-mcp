@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -28,13 +29,18 @@ type App struct {
 	kit       *kit.Manager
 	tokens    *TokenService
 	providers *ProviderService
+	mcpLogs   *MCPCallLogService
 	resources *ResourceScanner
 	tickets   *TicketStore
 
-	mcpHTTP       http.Handler
-	mcpSSE        http.Handler
-	ui            http.Handler
-	providerProxy http.Handler
+	mcpServer        *mcpserver.MCPServer
+	mcpHTTP          http.Handler
+	mcpSSE           http.Handler
+	ui               http.Handler
+	providerProxy    http.Handler
+	cleanupCancel    context.CancelFunc
+	upstreamToolMu   sync.RWMutex
+	upstreamToolRefs map[string]upstreamToolRef
 }
 
 func New(ctx context.Context, cfg Config, logger *zlog.Logger) (*App, error) {
@@ -49,6 +55,7 @@ func New(ctx context.Context, cfg Config, logger *zlog.Logger) (*App, error) {
 	}
 
 	providers := NewProviderService(db)
+	mcpLogs := NewMCPCallLogService(db, cfg.MCPLogRetentionDays)
 	tickets := &TicketStore{}
 	app := &App{
 		cfg:       cfg,
@@ -58,15 +65,20 @@ func New(ctx context.Context, cfg Config, logger *zlog.Logger) (*App, error) {
 		kit:       kit.NewManagerWithGateway(gw, logger),
 		tokens:    NewTokenService(db),
 		providers: providers,
+		mcpLogs:   mcpLogs,
 		resources: NewResourceScanner(cfg.ResourceRoot),
 		tickets:   tickets,
 	}
 
 	mcpServer := app.newMCPServer()
+	app.mcpServer = mcpServer
+	app.upstreamToolRefs = make(map[string]upstreamToolRef)
 	app.mcpHTTP = mcpserver.NewStreamableHTTPServer(mcpServer)
 	app.mcpSSE = mcpserver.NewSSEServer(mcpServer)
 	app.ui = web.Console()
-	app.providerProxy = proxy.New(providers, tickets)
+	app.providerProxy = app.withMCPProxyLogging(proxy.New(providers, tickets))
+	app.startMCPLogCleanup(ctx)
+	app.refreshUpstreamToolsAsync()
 	return app, nil
 }
 
@@ -116,6 +128,9 @@ func Run() error {
 }
 
 func (a *App) Close() {
+	if a.cleanupCancel != nil {
+		a.cleanupCancel()
+	}
 	if a.gateway != nil {
 		_ = a.gateway.Close()
 	}
@@ -137,10 +152,14 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case strings.HasPrefix(r.URL.Path, "/skills/"):
 		a.serveSkill(w, r)
 	case r.URL.Path == "/" || r.URL.Path == "/console.css":
-		a.tickets.Capture(r)
+		if a.tickets.Capture(r) {
+			a.refreshUpstreamToolsAsync()
+		}
 		a.serveUI(w, r)
 	case strings.HasPrefix(r.URL.Path, "/api/"):
-		a.tickets.Capture(r)
+		if a.tickets.Capture(r) {
+			a.refreshUpstreamToolsAsync()
+		}
 		a.handleAPI(w, r)
 	default:
 		http.NotFound(w, r)

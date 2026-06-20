@@ -8,6 +8,18 @@ import (
 	"lazycat-mcp/ent"
 )
 
+// The MCPCallLogFunc type is an adapter to allow the use of ordinary
+// function as MCPCallLog mutator.
+type MCPCallLogFunc func(context.Context, *ent.MCPCallLogMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MCPCallLogFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MCPCallLogMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MCPCallLogMutation", m)
+}
+
 // The MCPTokenFunc type is an adapter to allow the use of ordinary
 // function as MCPToken mutator.
 type MCPTokenFunc func(context.Context, *ent.MCPTokenMutation) (ent.Value, error)

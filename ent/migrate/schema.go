@@ -8,6 +8,51 @@ import (
 )
 
 var (
+	// McpCallLogsColumns holds the columns for the "mcp_call_logs" table.
+	McpCallLogsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "source", Type: field.TypeEnum, Enums: []string{"local", "upstream"}, Default: "local"},
+		{Name: "transport", Type: field.TypeEnum, Enums: []string{"streamable_http", "sse", "http"}, Default: "streamable_http"},
+		{Name: "method", Type: field.TypeString, Size: 180},
+		{Name: "target", Type: field.TypeString, Size: 240},
+		{Name: "provider_slug", Type: field.TypeString, Nullable: true, Size: 180},
+		{Name: "token_prefix", Type: field.TypeString, Nullable: true, Size: 32},
+		{Name: "session_id", Type: field.TypeString, Nullable: true, Size: 180},
+		{Name: "request_id", Type: field.TypeString, Nullable: true, Size: 120},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"success", "error"}, Default: "success"},
+		{Name: "status_code", Type: field.TypeInt, Nullable: true},
+		{Name: "duration_ms", Type: field.TypeInt64, Default: 0},
+		{Name: "error", Type: field.TypeString, Nullable: true, Size: 500},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// McpCallLogsTable holds the schema information for the "mcp_call_logs" table.
+	McpCallLogsTable = &schema.Table{
+		Name:       "mcp_call_logs",
+		Columns:    McpCallLogsColumns,
+		PrimaryKey: []*schema.Column{McpCallLogsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "mcpcalllog_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{McpCallLogsColumns[13]},
+			},
+			{
+				Name:    "mcpcalllog_source",
+				Unique:  false,
+				Columns: []*schema.Column{McpCallLogsColumns[1]},
+			},
+			{
+				Name:    "mcpcalllog_status",
+				Unique:  false,
+				Columns: []*schema.Column{McpCallLogsColumns[9]},
+			},
+			{
+				Name:    "mcpcalllog_provider_slug",
+				Unique:  false,
+				Columns: []*schema.Column{McpCallLogsColumns[5]},
+			},
+		},
+	}
 	// McpTokensColumns holds the columns for the "mcp_tokens" table.
 	McpTokensColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -88,6 +133,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		McpCallLogsTable,
 		McpTokensTable,
 		UpstreamProvidersTable,
 	}
