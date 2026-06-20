@@ -9,9 +9,9 @@ application:
     - LAZYCAT_MCP_DB=/lzcapp/var/data/lazycat-mcp.db
   public_path:
     - /mcp
-    - /mcp/*
     - /sse
     - /message
+    - /skills
   upstreams:
     - location: /
       backend: http://127.0.0.1:3000/
