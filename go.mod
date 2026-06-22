@@ -5,7 +5,7 @@ go 1.25.1
 require (
 	entgo.io/ent v0.14.5
 	gitee.com/linakesi/lzc-sdk v0.1.0
-	github.com/lib-x/entsqlite v0.2.2
+	github.com/lib-x/entsqlite v0.2.3
 	github.com/likexian/whois v1.15.7
 	github.com/mark3labs/mcp-go v0.44.0
 	github.com/rs/zerolog v1.34.0
@@ -50,5 +50,5 @@ require (
 	modernc.org/libc v1.72.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.50.1 // indirect
+	modernc.org/sqlite v1.52.0 // indirect
 )
