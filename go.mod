@@ -3,7 +3,7 @@ module lazycat-mcp
 go 1.25.5
 
 require (
-	entgo.io/ent v0.14.5
+	entgo.io/ent v0.14.6
 	gitee.com/linakesi/lzc-sdk v0.1.0
 	github.com/lib-x/entsqlite v0.2.3
 	github.com/likexian/whois v1.15.7
@@ -15,7 +15,7 @@ require (
 )
 
 require (
-	ariga.io/atlas v0.32.1-0.20250325101103-175b25e1c1b9 // indirect
+	ariga.io/atlas v0.36.2-0.20250730182955-2c6300d0a3e1 // indirect
 	gitee.com/linakesi/lzc-baseos-protos v0.0.0-20240409034726-d8d3d3375144 // indirect
 	gitee.com/linakesi/remotesocks v0.0.0-20250225034155-8709b247f245 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
