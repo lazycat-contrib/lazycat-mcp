@@ -224,11 +224,18 @@ type ProviderDTO struct {
 }
 
 type PublicProviderDTO struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Endpoint    string `json:"endpoint"`
-	Transport   string `json:"transport"`
-	ToolPrefix  string `json:"tool_prefix,omitempty"`
+	Name           string   `json:"name"`
+	Slug           string   `json:"slug"`
+	Description    string   `json:"description,omitempty"`
+	Endpoint       string   `json:"endpoint"`
+	Transport      string   `json:"transport"`
+	ToolPrefix     string   `json:"tool_prefix,omitempty"`
+	AggregateOK    bool     `json:"aggregate_ok"`
+	AggregateError string   `json:"aggregate_error,omitempty"`
+	Kind           string   `json:"kind,omitempty"`
+	SkillTitle     string   `json:"skill_title,omitempty"`
+	SkillSummary   string   `json:"skill_summary,omitempty"`
+	SkillPrompts   []string `json:"skill_prompts,omitempty"`
 }
 
 func NewProviderService(db *ent.Client) *ProviderService {
@@ -416,6 +423,7 @@ func providerDTO(row *ent.UpstreamProvider) ProviderDTO {
 func publicProviderDTO(row *ent.UpstreamProvider) PublicProviderDTO {
 	dto := PublicProviderDTO{
 		Name:       row.Name,
+		Slug:       row.Slug,
 		Endpoint:   "/mcp/apps/" + row.Slug,
 		Transport:  row.Transport.String(),
 		ToolPrefix: sanitizeToolNamePart(row.Slug) + "__",
