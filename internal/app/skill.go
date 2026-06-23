@@ -74,6 +74,9 @@ func selectSkillResource(resources []SkillResource, preferred string) (*SkillRes
 				return &resources[i], nil
 			}
 		}
+		if len(resources) == 1 {
+			return &resources[0], nil
+		}
 		return nil, fmt.Errorf("missing SKILL.md for resource %q", preferred)
 	}
 	if len(resources) == 1 {

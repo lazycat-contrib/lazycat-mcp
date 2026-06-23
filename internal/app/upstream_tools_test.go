@@ -179,6 +179,22 @@ func TestRefreshUpstreamToolsRemovesDisabledProviderTools(t *testing.T) {
 	}
 }
 
+func TestSelectSkillResourceFallsBackToSingleSkillEvenWhenResourceIDDiffers(t *testing.T) {
+	resources := []SkillResource{{
+		AppID:      "cloud.lazycat.app.wx-data-helper-skill",
+		ResourceID: "wx-agent",
+		FilePath:   "/tmp/SKILL.md",
+		PublicPath: "/skills/cloud.lazycat.app.wx-data-helper-skill/wx-agent/SKILL.md",
+	}}
+	selected, err := selectSkillResource(resources, "default")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if selected.ResourceID != "wx-agent" {
+		t.Fatalf("resource_id = %q", selected.ResourceID)
+	}
+}
+
 func TestRefreshUpstreamToolsLoadsSkillContentFromResourceScanner(t *testing.T) {
 	ctx := context.Background()
 	skillStatesMu.Lock()
@@ -192,7 +208,7 @@ func TestRefreshUpstreamToolsLoadsSkillContentFromResourceScanner(t *testing.T) 
 	}()
 
 	root := t.TempDir()
-	skillDir := filepath.Join(root, "skills", "anna-skill", "default")
+	skillDir := filepath.Join(root, "skills", "anna-skill", "wx-agent")
 	if err := os.MkdirAll(skillDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
