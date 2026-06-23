@@ -257,6 +257,20 @@ func (a *App) handleListProviders(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	aggregated := a.aggregatedSlugs()
+	errs := a.aggregateErrors()
+	for i := range providers {
+		providers[i].AggregateOK = aggregated[providers[i].Slug]
+		providers[i].AggregateError = errs[providers[i].Slug]
+		if skill := skillContentBySlug(providers[i].Slug); skill != nil {
+			providers[i].Kind = "skill"
+			providers[i].SkillTitle = skill.Title
+			providers[i].SkillSummary = skill.Summary
+			providers[i].SkillPrompts = append([]string(nil), skill.PromptExamples...)
+		} else {
+			providers[i].Kind = "mcp"
+		}
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"providers": providers})
 }
 

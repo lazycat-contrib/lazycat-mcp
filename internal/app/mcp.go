@@ -44,6 +44,19 @@ func (a *App) providerListTool() mcpserver.ServerTool {
 			if err != nil {
 				return mcp.NewToolResultError(err.Error()), nil
 			}
+			aggregated := a.aggregatedSlugs()
+			errors := a.aggregateErrors()
+			for i := range providers {
+				providers[i].Kind = "mcp"
+				providers[i].AggregateOK = aggregated[providers[i].Slug]
+				providers[i].AggregateError = errors[providers[i].Slug]
+				if skill := skillContentBySlug(providers[i].Slug); skill != nil {
+					providers[i].Kind = "skill"
+					providers[i].SkillTitle = skill.Title
+					providers[i].SkillSummary = skill.Summary
+					providers[i].SkillPrompts = append([]string(nil), skill.PromptExamples...)
+				}
+			}
 			payload := map[string]any{
 				"local": map[string]any{
 					"name":      "LazyCat MCP",

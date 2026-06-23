@@ -54,3 +54,71 @@ func TestProviderListToolOnlyExposesGatewayEndpoints(t *testing.T) {
 		}
 	}
 }
+
+func TestProviderListToolIncludesSkillMetadata(t *testing.T) {
+	ctx := context.Background()
+	db, err := openDB(ctx, filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	providers := NewProviderService(db)
+	if _, err := providers.Create(ctx, ProviderInput{
+		Type:      "custom",
+		Name:      "Anna Skill",
+		Slug:      "anna-skill",
+		BaseURL:   "https://skill.example.com",
+		Endpoint:  "/mcp",
+		Transport: "streamable_http",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	skillStatesMu.Lock()
+	originalSkillStates := skillStatesMap
+	skillStatesMap = map[string]*skillState{
+		"anna-skill": {
+			content: SkillContent{
+				Title:          "安娜智能下载",
+				Summary:        "这是一个技能页面摘要。",
+				PromptExamples: []string{"帮我找一本书", "帮我批量下载"},
+				RawMarkdown:    "---\nname: 安娜智能下载\ndescription: 这是一个技能页面摘要。\n---\n## Prompt Examples\n- 帮我找一本书\n- 帮我批量下载\n",
+				ResourceURI:    "skills://anna-skill/SKILL.md",
+			},
+		},
+	}
+	skillStatesMu.Unlock()
+	defer func() {
+		skillStatesMu.Lock()
+		skillStatesMap = originalSkillStates
+		skillStatesMu.Unlock()
+	}()
+
+	app := &App{providers: providers, upstreamFailureReasons: map[string]string{"anna-skill": "missing SKILL.md"}}
+	result, err := app.providerListTool().Handler(ctx, mcp.CallToolRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Content) != 1 {
+		t.Fatalf("content length = %d", len(result.Content))
+	}
+	content, ok := result.Content[0].(mcp.TextContent)
+	if !ok {
+		t.Fatalf("content type = %T", result.Content[0])
+	}
+
+	if !strings.Contains(content.Text, `"kind":"skill"`) {
+		t.Fatalf("expected skill kind in %s", content.Text)
+	}
+	for _, want := range []string{
+		`"skill_title":"安娜智能下载"`,
+		`"skill_summary":"这是一个技能页面摘要。"`,
+		`"skill_prompts":["帮我找一本书","帮我批量下载"]`,
+		`"slug":"anna-skill"`,
+	} {
+		if !strings.Contains(content.Text, want) {
+			t.Fatalf("expected %s in %s", want, content.Text)
+		}
+	}
+}
