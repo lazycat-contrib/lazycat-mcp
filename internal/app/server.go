@@ -33,14 +33,15 @@ type App struct {
 	resources *ResourceScanner
 	tickets   *TicketStore
 
-	mcpServer        *mcpserver.MCPServer
-	mcpHTTP          http.Handler
-	mcpSSE           http.Handler
-	ui               http.Handler
-	providerProxy    http.Handler
-	cleanupCancel    context.CancelFunc
-	upstreamToolMu   sync.RWMutex
-	upstreamToolRefs map[string]upstreamToolRef
+	mcpServer              *mcpserver.MCPServer
+	mcpHTTP                http.Handler
+	mcpSSE                 http.Handler
+	ui                     http.Handler
+	providerProxy          http.Handler
+	cleanupCancel          context.CancelFunc
+	upstreamToolMu         sync.RWMutex
+	upstreamToolRefs       map[string]upstreamToolRef
+	upstreamFailureReasons map[string]string
 }
 
 func New(ctx context.Context, cfg Config, logger *zlog.Logger) (*App, error) {
@@ -73,12 +74,14 @@ func New(ctx context.Context, cfg Config, logger *zlog.Logger) (*App, error) {
 	mcpServer := app.newMCPServer()
 	app.mcpServer = mcpServer
 	app.upstreamToolRefs = make(map[string]upstreamToolRef)
+	app.upstreamFailureReasons = make(map[string]string)
 	app.mcpHTTP = mcpserver.NewStreamableHTTPServer(mcpServer)
 	app.mcpSSE = mcpserver.NewSSEServer(mcpServer)
 	app.ui = web.Console()
 	app.providerProxy = app.withMCPProxyLogging(proxy.New(providers, tickets))
 	app.startMCPLogCleanup(ctx)
 	app.refreshUpstreamToolsAsync()
+	app.registerSkillTools()
 	return app, nil
 }
 
@@ -127,6 +130,17 @@ func Run() error {
 	}
 }
 
+func (a *App) registerSkillTools() {
+	a.mcpServer.AddTools(a.skillPromptTool())
+}
+
+func (a *App) captureTicket(r *http.Request) bool {
+	if a == nil || a.tickets == nil || r == nil {
+		return false
+	}
+	return a.tickets.Capture(r)
+}
+
 func (a *App) Close() {
 	if a.cleanupCancel != nil {
 		a.cleanupCancel()
@@ -141,6 +155,9 @@ func (a *App) Close() {
 
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	setSecurityHeaders(w)
+	if a.captureTicket(r) {
+		a.refreshUpstreamToolsAsync()
+	}
 
 	switch {
 	case strings.HasPrefix(r.URL.Path, "/mcp/apps/"):
@@ -152,14 +169,8 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case strings.HasPrefix(r.URL.Path, "/skills/"):
 		a.serveSkill(w, r)
 	case r.URL.Path == "/" || r.URL.Path == "/console.css":
-		if a.tickets.Capture(r) {
-			a.refreshUpstreamToolsAsync()
-		}
 		a.serveUI(w, r)
 	case strings.HasPrefix(r.URL.Path, "/api/"):
-		if a.tickets.Capture(r) {
-			a.refreshUpstreamToolsAsync()
-		}
 		a.handleAPI(w, r)
 	default:
 		http.NotFound(w, r)
