@@ -218,6 +218,12 @@ type ProviderDTO struct {
 	PublicEndpoint string     `json:"public_endpoint"`
 	HeaderNames    []string   `json:"header_names,omitempty"`
 	HeaderCount    int        `json:"header_count"`
+	AggregateOK    bool       `json:"aggregate_ok"`
+	AggregateError string     `json:"aggregate_error,omitempty"`
+	Kind           string     `json:"kind,omitempty"`
+	SkillTitle     string     `json:"skill_title,omitempty"`
+	SkillSummary   string     `json:"skill_summary,omitempty"`
+	SkillPrompts   []string   `json:"skill_prompts,omitempty"`
 	LastUsedAt     *time.Time `json:"last_used_at,omitempty"`
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`

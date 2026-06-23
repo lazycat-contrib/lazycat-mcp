@@ -133,82 +133,130 @@
       </section>
 
       <section class="view" id="upstreamsView" data-view-panel="upstreams" aria-labelledby="providerTitle" hidden>
-        <section class="panel" aria-labelledby="providerTitle">
-          <div class="panel-head">
-            <div>
-              <h3 id="providerTitle" data-i18n="programMcp">添加 MCP 上游</h3>
-              <p class="muted" data-i18n="resourceFilteredApps">选择懒猫应用或添加外部 MCP 服务</p>
-            </div>
-          </div>
-          <div class="panel-body">
-            <form id="providerForm" class="form-grid">
-              <div class="mode-tabs span-2" role="tablist" data-i18n-aria="providerType">
-                <button type="button" id="lazycatModeBtn" role="tab" aria-controls="lazycatFields" data-provider-mode="lazycat" data-i18n="lazycatApp">懒猫应用</button>
-                <button type="button" id="customModeBtn" role="tab" aria-controls="customFields" data-provider-mode="custom" data-i18n="customMcp">添加自定义 MCP</button>
-              </div>
-              <div id="lazycatFields" class="form-section span-2">
-                <label class="span-2"><span data-i18n="app">程序</span>
-                  <select id="appSelect" required></select>
-                </label>
-                <label><span data-i18n="appSubpath">程序子路径</span>
-                  <input id="slugInput" autocomplete="off" required>
-                </label>
-                <label><span data-i18n="resourceProvider">资源 Provider</span>
-                  <select id="resourceSelect"></select>
-                </label>
-                <label class="span-2"><span data-i18n="programMcpPath">程序 MCP 路径</span>
-                  <input id="endpointInput" autocomplete="off" required>
-                </label>
-              </div>
-              <div id="customFields" class="form-section span-2" hidden>
-                <label><span data-i18n="providerName">名称</span>
-                  <input id="customNameInput" autocomplete="off" placeholder="Context7" required disabled>
-                </label>
-                <label><span data-i18n="customSubpath">公开路径</span>
-                  <input id="customSlugInput" autocomplete="off" placeholder="context7" required disabled>
-                </label>
-                <label class="span-2"><span data-i18n="description">说明</span>
-                  <input id="customDescriptionInput" autocomplete="off" data-i18n-placeholder="optional" placeholder="选填" disabled>
-                </label>
-                <label class="span-2"><span data-i18n="serviceURL">服务地址</span>
-                  <input id="customBaseURLInput" autocomplete="off" inputmode="url" placeholder="https://example.com" required disabled>
-                </label>
-                <label><span data-i18n="mcpPath">MCP 路径</span>
-                  <input id="customEndpointInput" autocomplete="off" value="/mcp" required disabled>
-                </label>
-                <label><span data-i18n="transport">传输方式</span>
-                  <select id="customTransportSelect" required disabled>
-                    <option value="streamable_http">Streamable HTTP</option>
-                    <option value="sse">SSE</option>
-                  </select>
-                </label>
-                <div class="header-editor span-2">
-                  <div class="field-head">
-                    <span data-i18n="headers">请求头</span>
-                    <button type="button" class="ghost compact" id="addHeaderBtn" data-i18n="addHeader" disabled>添加</button>
-                  </div>
-                  <div id="headerRows" class="header-rows"></div>
-                </div>
-              </div>
-              <div class="actions span-2">
-                <button class="primary" id="saveProviderBtn" type="submit" data-i18n="save">保存</button>
-                <span class="muted mono" id="suggestedPath"></span>
-              </div>
-            </form>
-          </div>
-        </section>
+        <div class="subview-tabs" role="tablist" aria-label="Upstreams subviews">
+          <button type="button" class="ghost" data-upstreams-subview="resources" data-i18n="resourcesWorkspace">资源视图</button>
+          <button type="button" class="ghost" data-upstreams-subview="published" data-i18n="publishedWorkspace">已发布出口</button>
+        </div>
 
-        <section class="panel" aria-labelledby="providersTitle">
-          <div class="panel-head">
-            <div>
-              <h3 id="providersTitle" data-i18n="publishedUpstreams">已发布上游</h3>
-              <p class="muted" data-i18n="publishedUpstreamsHint">可代理的 MCP 服务</p>
+        <div id="upstreamsResourcesView">
+          <section class="panel" aria-labelledby="providerTitle">
+            <div class="panel-head">
+              <div>
+                <h3 id="providerTitle" data-i18n="resourceCatalog">资源目录</h3>
+                <p class="muted" data-i18n="resourceCatalogHint">先看应用暴露了什么资源，再决定是否发布为 provider</p>
+              </div>
+              <div class="actions catalog-filters">
+                <button type="button" class="primary compact" id="openPublishModalBtn" data-i18n="publishShort">发布</button>
+                <button type="button" class="compact ghost" data-track-filter="all" data-i18n="trackAll">全部</button>
+                <button type="button" class="compact ghost" data-track-filter="mcp" data-i18n="trackMcp">仅 MCP</button>
+                <button type="button" class="compact ghost" data-track-filter="skill" data-i18n="trackSkill">仅 Skill</button>
+                <button type="button" class="compact ghost" data-track-filter="dual" data-i18n="trackDual">双轨</button>
+              </div>
             </div>
+            <div class="panel-body upstreams-layout">
+              <div>
+                <div class="catalog-toolbar">
+                  <input id="appSearchInput" autocomplete="off" data-i18n-placeholder="searchAppsPlaceholder" placeholder="搜索应用、app id、资源类型">
+                  <div class="pager-summary muted" id="appPagerSummary"></div>
+                </div>
+                <div id="appCatalog" class="list"></div>
+                <div class="pager-row" id="appPager"></div>
+              </div>
+              <div class="inspector-stack">
+                <div id="appInspector" class="inspector-empty"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div id="upstreamsPublishedView" hidden>
+          <section class="panel" aria-labelledby="providersTitle">
+            <div class="panel-head">
+              <div>
+                <h3 id="providersTitle" data-i18n="publishedEndpoints">已发布出口</h3>
+                <p class="muted" data-i18n="publishedEndpointsHint">这里展示已经对外暴露的 provider endpoint</p>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="catalog-toolbar">
+                <input id="providerSearchInput" autocomplete="off" data-i18n-placeholder="searchProvidersPlaceholder" placeholder="搜索 provider、app、路径、资源">
+                <div class="pager-summary muted" id="providerPagerSummary"></div>
+              </div>
+              <div id="providerList" class="list"></div>
+              <div class="pager-row" id="providerPager"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <dialog id="publishDialog" class="modal-shell" aria-labelledby="publishTitle">
+        <form method="dialog" class="modal-backdrop-form">
+          <button class="modal-backdrop" aria-label="Close" value="cancel"></button>
+        </form>
+        <div class="modal-card">
+          <div class="modal-head publish-card-head">
+            <div>
+              <h3 id="publishTitle" data-i18n="publishActions">发布动作</h3>
+              <p class="muted" data-i18n="publishActionsHint">从所选 app 的资源生成 provider，或添加外部 MCP 服务</p>
+            </div>
+            <button type="button" class="ghost compact" id="closePublishModalBtn" data-i18n="closeDialog">关闭</button>
           </div>
-          <div class="panel-body">
-            <div id="providerList" class="list"></div>
-          </div>
-        </section>
+          <form id="providerForm" class="form-grid modal-body">
+            <div class="mode-tabs span-2" role="tablist" data-i18n-aria="providerType">
+              <button type="button" id="lazycatModeBtn" role="tab" aria-controls="lazycatFields" data-provider-mode="lazycat" data-i18n="lazycatApp">懒猫应用</button>
+              <button type="button" id="customModeBtn" role="tab" aria-controls="customFields" data-provider-mode="custom" data-i18n="customMcp">添加自定义 MCP</button>
+            </div>
+            <div id="lazycatFields" class="form-section span-2">
+              <label class="span-2"><span data-i18n="app">程序</span>
+                <select id="appSelect" required></select>
+              </label>
+              <label><span data-i18n="appSubpath">程序子路径</span>
+                <input id="slugInput" autocomplete="off" required>
+              </label>
+              <label><span data-i18n="resourceProvider">资源 Provider</span>
+                <select id="resourceSelect"></select>
+              </label>
+              <label class="span-2"><span data-i18n="programMcpPath">程序 MCP 路径</span>
+                <input id="endpointInput" autocomplete="off" required>
+              </label>
+            </div>
+            <div id="customFields" class="form-section span-2" hidden>
+              <label><span data-i18n="providerName">名称</span>
+                <input id="customNameInput" autocomplete="off" placeholder="Context7" required disabled>
+              </label>
+              <label><span data-i18n="customSubpath">公开路径</span>
+                <input id="customSlugInput" autocomplete="off" placeholder="context7" required disabled>
+              </label>
+              <label class="span-2"><span data-i18n="description">说明</span>
+                <input id="customDescriptionInput" autocomplete="off" data-i18n-placeholder="optional" placeholder="选填" disabled>
+              </label>
+              <label class="span-2"><span data-i18n="serviceURL">服务地址</span>
+                <input id="customBaseURLInput" autocomplete="off" inputmode="url" placeholder="https://example.com" required disabled>
+              </label>
+              <label><span data-i18n="mcpPath">MCP 路径</span>
+                <input id="customEndpointInput" autocomplete="off" value="/mcp" required disabled>
+              </label>
+              <label><span data-i18n="transport">传输方式</span>
+                <select id="customTransportSelect" required disabled>
+                  <option value="streamable_http">Streamable HTTP</option>
+                  <option value="sse">SSE</option>
+                </select>
+              </label>
+              <div class="header-editor span-2">
+                <div class="field-head">
+                  <span data-i18n="headers">请求头</span>
+                  <button type="button" class="ghost compact" id="addHeaderBtn" data-i18n="addHeader" disabled>添加</button>
+                </div>
+                <div id="headerRows" class="header-rows"></div>
+              </div>
+            </div>
+            <div class="actions span-2 modal-actions">
+              <button class="primary" id="saveProviderBtn" type="submit" data-i18n="save">保存</button>
+              <span class="muted mono" id="suggestedPath"></span>
+            </div>
+          </form>
+        </div>
+        </dialog>
       </section>
 
       <section class="view" id="accessView" data-view-panel="access" aria-labelledby="tokenTitle" hidden>
@@ -296,7 +344,59 @@
         observabilityNavHint: "调用日志",
         gatewayState: "网关状态",
         overviewDesc: "检查网关状态，复制推荐端点，查看最近调用。",
-        upstreamsDesc: "发布懒猫应用或外部 MCP 服务，并管理已发布上游。",
+        upstreamsDesc: "先查看资源与发布动作，再切换到已发布出口做运维管理。",
+        resourcesWorkspace: "资源视图",
+        publishedWorkspace: "已发布出口",
+        resourceCatalog: "资源目录",
+        resourceCatalogHint: "先看应用暴露了什么资源，再决定是否发布为 provider",
+        trackAll: "全部",
+        trackMcp: "仅 MCP",
+        trackSkill: "仅 Skill",
+        trackDual: "双轨",
+        publishActions: "发布动作",
+        openPublishDialog: "打开发布弹窗",
+        publishShort: "发布",
+        closeDialog: "关闭",
+        searchAppsPlaceholder: "搜索应用、app id、资源类型",
+        searchProvidersPlaceholder: "搜索 provider、app、路径、资源",
+        pagerSummary: "第 {page} / {pages} 页 · 共 {count} 项",
+        prevPage: "上一页",
+        nextPage: "下一页",
+        publishActionsHint: "从所选 app 的资源生成 provider，或添加外部 MCP 服务",
+        publishedEndpoints: "已发布出口",
+        publishedEndpointsHint: "这里展示已经对外暴露的 provider endpoint",
+        appTracksNone: "无资源",
+        appTracksMcp: "MCP",
+        appTracksSkill: "SKILL",
+        appTracksDual: "MCP + SKILL",
+        catalogEmpty: "没有符合筛选条件的应用",
+        appInspectorEmpty: "从左侧选择一个应用，查看它的 MCP / Skill 资源与发布动作。",
+        appInspectorHint: "应用资源详情",
+        mcpTrack: "MCP 轨",
+        skillTrack: "Skill 轨",
+        resourceCount: "资源 {count}",
+        skillCount: "技能 {count}",
+        publishDefault: "发布默认资源",
+        selectAppFirst: "请先选择应用",
+        noMcpResources: "这个应用当前没有 MCP 资源",
+        noSkillResources: "这个应用当前没有 Skill 资源",
+        suggestedPathLabel: "建议公开路径",
+        selectedApp: "当前所选应用",
+        appStatusSummary: "资源概览",
+        appDetailUnavailable: "当前没有可展示的资源详情",
+        appIdentity: "应用标识",
+        appDeployInfo: "部署信息",
+        resourceHealth: "资源状态",
+        aggregateHealthy: "聚合正常",
+        aggregateDegraded: "聚合异常",
+        aggregateHealthyHint: "当前 app 的已发布 provider 聚合正常",
+        aggregateMissing: "当前还没有对应的已发布 provider",
+        aggregateErrorLabel: "异常",
+        skillMetadata: "Skill 元数据",
+        providerOrigin: "来源资源",
+        providerOriginCustom: "自定义外部 MCP",
+        providerOriginUnknown: "未关联到资源目录",
+        providerKindLabel: "资源类型",
         accessDesc: "创建和管理 MCP 客户端访问凭据。",
         observabilityDesc: "按来源和状态查看 MCP 调用日志。",
         programMcp: "添加 MCP 上游",
@@ -401,7 +501,59 @@
         observabilityNavHint: "Call logs",
         gatewayState: "Gateway state",
         overviewDesc: "Check gateway readiness, copy recommended endpoints, and review recent calls.",
-        upstreamsDesc: "Publish LazyCat apps or external MCP services, and manage upstreams.",
+        upstreamsDesc: "Inspect resources and publish actions first, then switch to published endpoints for operations.",
+        resourcesWorkspace: "Resources",
+        publishedWorkspace: "Published endpoints",
+        resourceCatalog: "Resource catalog",
+        resourceCatalogHint: "Inspect what an app exports before publishing it as a provider",
+        trackAll: "All",
+        trackMcp: "MCP only",
+        trackSkill: "Skill only",
+        trackDual: "Dual-track",
+        publishActions: "Publish actions",
+        openPublishDialog: "Open publish dialog",
+        publishShort: "Publish",
+        closeDialog: "Close",
+        searchAppsPlaceholder: "Search apps, app ids, or resource types",
+        searchProvidersPlaceholder: "Search providers, apps, paths, or resources",
+        pagerSummary: "Page {page} / {pages} · {count} items",
+        prevPage: "Previous",
+        nextPage: "Next",
+        publishActionsHint: "Create providers from the selected app resource, or add an external MCP service",
+        publishedEndpoints: "Published endpoints",
+        publishedEndpointsHint: "Endpoints already exposed through the gateway",
+        appTracksNone: "No resources",
+        appTracksMcp: "MCP",
+        appTracksSkill: "SKILL",
+        appTracksDual: "MCP + SKILL",
+        catalogEmpty: "No apps match the current filter",
+        appInspectorEmpty: "Select an app on the left to inspect its MCP / Skill resources and publish actions.",
+        appInspectorHint: "App resource details",
+        mcpTrack: "MCP track",
+        skillTrack: "Skill track",
+        resourceCount: "Resources {count}",
+        skillCount: "Skills {count}",
+        publishDefault: "Publish default resource",
+        selectAppFirst: "Select an app first",
+        noMcpResources: "This app currently has no MCP resources",
+        noSkillResources: "This app currently has no skill resources",
+        suggestedPathLabel: "Suggested public path",
+        selectedApp: "Selected app",
+        appStatusSummary: "Resource summary",
+        appDetailUnavailable: "No resource details available for this app",
+        appIdentity: "App identity",
+        appDeployInfo: "Deployment",
+        resourceHealth: "Resource health",
+        aggregateHealthy: "Aggregation healthy",
+        aggregateDegraded: "Aggregation degraded",
+        aggregateHealthyHint: "Published providers for this app aggregate successfully",
+        aggregateMissing: "No published provider is linked to this app yet",
+        aggregateErrorLabel: "Error",
+        skillMetadata: "Skill metadata",
+        providerOrigin: "Source resource",
+        providerOriginCustom: "Custom external MCP",
+        providerOriginUnknown: "Not linked to the resource catalog",
+        providerKindLabel: "Resource type",
         accessDesc: "Create and manage MCP client credentials.",
         observabilityDesc: "Inspect MCP call logs by source and status.",
         programMcp: "Add MCP upstream",
@@ -503,6 +655,14 @@
       logRetentionDays: 30,
       providerMode: "lazycat",
       activeView: initialView(),
+      upstreamsSubView: "resources",
+      selectedAppId: null,
+      appTrackFilter: "all",
+      appSearch: "",
+      providerSearch: "",
+      appPage: 1,
+      providerPage: 1,
+      pageSize: 8,
       logFilters: {
         source: "",
         status: ""
@@ -634,14 +794,20 @@
       state.providers = providers.providers || [];
       state.logs = logs.logs || [];
       state.logRetentionDays = logs.retention_days ?? status.mcp_log_retention_days ?? 30;
+      if (!state.selectedAppId || !state.apps.some((app) => app.app_id === state.selectedAppId)) {
+        state.selectedAppId = state.apps[0] ? state.apps[0].app_id : null;
+      }
       render();
     }
 
     function render() {
       setActiveView(state.activeView, false);
       renderStatus();
+      renderUpstreamsSubView();
       renderProviderMode();
       renderApps();
+      renderAppCatalog();
+      renderAppInspector();
       renderTokens();
       renderProviders();
       renderSkill();
@@ -672,6 +838,22 @@
     function setProviderMode(mode) {
       state.providerMode = mode === "custom" ? "custom" : "lazycat";
       renderProviderMode();
+    }
+
+    function setUpstreamsSubView(view) {
+      state.upstreamsSubView = view === "published" ? "published" : "resources";
+      renderUpstreamsSubView();
+    }
+
+    function renderUpstreamsSubView() {
+      const isPublished = state.upstreamsSubView === "published";
+      $("upstreamsResourcesView").hidden = isPublished;
+      $("upstreamsPublishedView").hidden = !isPublished;
+      document.querySelectorAll("[data-upstreams-subview]").forEach((button) => {
+        const active = button.dataset.upstreamsSubview === state.upstreamsSubView;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", active ? "true" : "false");
+      });
     }
 
     function setGroupDisabled(id, disabled) {
@@ -706,7 +888,7 @@
 
     function renderApps() {
       const select = $("appSelect");
-      const selected = select.value;
+      const selected = state.selectedAppId || select.value;
       select.replaceChildren();
       if (state.apps.length === 0) {
         const option = new Option(t("noResourceApps"), "");
@@ -722,8 +904,7 @@
       select.disabled = false;
       updateProviderSubmitState();
       state.apps.forEach((app) => {
-        const suffix = app.has_mcp ? "MCP" : "Skill";
-        const option = new Option(`${app.title} · ${app.app_id} · ${suffix}`, app.app_id);
+        const option = new Option(`${app.title} · ${app.app_id} · ${trackLabel(app)}`, app.app_id);
         select.appendChild(option);
       });
       if (selected && state.apps.some((app) => app.app_id === selected)) {
@@ -732,9 +913,250 @@
       applySelectedApp();
     }
 
+    function filteredApps() {
+      const query = state.appSearch.trim().toLowerCase();
+      return state.apps.filter((app) => {
+        if (!matchesTrackFilter(app, state.appTrackFilter)) return false;
+        if (!query) return true;
+        const haystack = [
+          app.title || "",
+          app.app_id || "",
+          trackLabel(app),
+          ...(app.mcp_providers || []).map((r) => `${r.resource_id || "default"} ${r.endpoint || ""}`),
+          ...(app.skills || []).map((r) => `${r.resource_id || "default"} ${r.public_path || r.file_path || ""}`)
+        ].join(" ").toLowerCase();
+        return haystack.includes(query);
+      });
+    }
+
+    function renderAppCatalog() {
+      const list = $("appCatalog");
+      list.replaceChildren();
+      updateTrackFilterButtons();
+      const apps = filteredApps();
+      const page = paginate(apps, state.appPage, state.pageSize);
+      state.appPage = page.page;
+      $("appPagerSummary").textContent = apps.length ? t("pagerSummary", { page: page.page, pages: page.pages, count: apps.length }) : "";
+      renderPager($("appPager"), page.page, page.pages, (next) => { state.appPage = next; renderAppCatalog(); });
+      if (apps.length === 0) {
+        list.appendChild(empty(t("catalogEmpty")));
+        return;
+      }
+      page.items.forEach((app) => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = `item app-card ${state.selectedAppId === app.app_id ? "selected" : ""}`;
+        item.addEventListener("click", () => selectApp(app.app_id));
+
+        const row = document.createElement("div");
+        row.className = "item-row";
+        const left = document.createElement("div");
+        const title = document.createElement("h3");
+        title.textContent = app.title || app.app_id;
+        const meta = document.createElement("div");
+        meta.className = "mono muted";
+        meta.textContent = app.app_id;
+        left.append(title, meta);
+
+        const badges = document.createElement("div");
+        badges.className = "actions";
+        badges.append(...trackPills(app));
+        row.append(left, badges);
+
+        const summary = document.createElement("div");
+        summary.className = "muted";
+        summary.textContent = `${t("resourceCount", { count: (app.mcp_providers || []).length })} · ${t("skillCount", { count: (app.skills || []).length })}`;
+
+        const path = document.createElement("div");
+        path.className = "mono muted";
+        path.textContent = `${t("suggestedPathLabel")}: ${app.suggested_public_path || `/mcp/apps/${app.app_id}`}`;
+
+        item.append(row, summary, path);
+        list.appendChild(item);
+      });
+    }
+
+    function renderAppInspector() {
+      const host = $("appInspector");
+      host.replaceChildren();
+      const app = selectedApp();
+      if (!app) {
+        host.className = "inspector-empty";
+        host.textContent = t("appInspectorEmpty");
+        return;
+      }
+      host.className = "inspector-stack";
+
+      const relatedProviders = providersForApp(app.app_id);
+      const summary = document.createElement("div");
+      summary.className = "item";
+      const header = document.createElement("div");
+      header.className = "item-row";
+      const left = document.createElement("div");
+      const title = document.createElement("h3");
+      title.textContent = app.title || app.app_id;
+      const subtitle = document.createElement("div");
+      subtitle.className = "mono muted";
+      subtitle.textContent = app.app_id;
+      left.append(title, subtitle);
+      const badges = document.createElement("div");
+      badges.className = "actions";
+      badges.append(...trackPills(app));
+      header.append(left, badges);
+      const summaryText = document.createElement("div");
+      summaryText.className = "muted";
+      summaryText.textContent = `${t("appStatusSummary")}: ${t("resourceCount", { count: (app.mcp_providers || []).length })} · ${t("skillCount", { count: (app.skills || []).length })}`;
+      summary.append(header, summaryText);
+
+      const identity = document.createElement("div");
+      identity.className = "inspector-meta";
+      identity.append(
+        metaBlock(t("appIdentity"), app.app_id),
+        metaBlock(t("appDeployInfo"), app.deploy_id || app.instance_status || app.status || t("appDetailUnavailable"))
+      );
+      summary.appendChild(identity);
+
+      const health = document.createElement("div");
+      health.className = "item";
+      const healthTitle = document.createElement("h3");
+      healthTitle.textContent = t("resourceHealth");
+      health.appendChild(healthTitle);
+      if (relatedProviders.length === 0) {
+        health.appendChild(empty(t("aggregateMissing")));
+      } else {
+        relatedProviders.forEach((provider) => {
+          const row = document.createElement("div");
+          row.className = "resource-row";
+          const info = document.createElement("div");
+          const line1 = document.createElement("div");
+          line1.textContent = provider.name;
+          const line2 = document.createElement("div");
+          line2.className = "mono muted";
+          line2.textContent = provider.public_endpoint;
+          info.append(line1, line2);
+          if (provider.aggregate_error) {
+            const err = document.createElement("div");
+            err.className = "muted";
+            err.textContent = `${t("aggregateErrorLabel")}: ${provider.aggregate_error}`;
+            info.appendChild(err);
+          } else {
+            const ok = document.createElement("div");
+            ok.className = "muted";
+            ok.textContent = t("aggregateHealthyHint");
+            info.appendChild(ok);
+          }
+          const badges = document.createElement("div");
+          badges.className = "actions";
+          badges.appendChild(pill(provider.aggregate_ok ? t("aggregateHealthy") : t("aggregateDegraded"), provider.aggregate_ok ? "ok" : "warn"));
+          if (provider.kind) badges.appendChild(pill(provider.kind.toUpperCase(), provider.kind === 'skill' ? 'info' : 'ok'));
+          row.append(info, badges);
+          health.appendChild(row);
+        });
+      }
+
+      const mcpPanel = document.createElement("div");
+      mcpPanel.className = "item";
+      const mcpTitle = document.createElement("h3");
+      mcpTitle.textContent = t("mcpTrack");
+      mcpPanel.appendChild(mcpTitle);
+      if (app.mcp_providers && app.mcp_providers.length) {
+        app.mcp_providers.forEach((resource) => {
+          const row = document.createElement("div");
+          row.className = "resource-row";
+          const info = document.createElement("div");
+          const title = document.createElement("div");
+          title.textContent = resource.resource_id || "default";
+          const meta = document.createElement("div");
+          meta.className = "mono muted";
+          meta.textContent = resource.endpoint || "/mcp";
+          info.append(title, meta);
+          const actions = document.createElement("div");
+          actions.className = "actions";
+          const publish = document.createElement("button");
+          publish.type = "button";
+          publish.className = "compact";
+          publish.textContent = t("publishDefault");
+          publish.addEventListener("click", () => selectAppResource(app.app_id, resource.resource_id, resource.endpoint));
+          actions.append(publish);
+          row.append(info, actions);
+          mcpPanel.appendChild(row);
+        });
+      } else {
+        mcpPanel.appendChild(empty(t("noMcpResources")));
+      }
+
+      const skillPanel = document.createElement("div");
+      skillPanel.className = "item";
+      const skillTitle = document.createElement("h3");
+      skillTitle.textContent = t("skillTrack");
+      skillPanel.appendChild(skillTitle);
+      if (app.skills && app.skills.length) {
+        app.skills.forEach((resource) => {
+          const row = document.createElement("div");
+          row.className = "resource-row";
+          const info = document.createElement("div");
+          const title = document.createElement("div");
+          title.textContent = resource.resource_id || "default";
+          const meta = document.createElement("div");
+          meta.className = "mono muted";
+          meta.textContent = resource.public_path || resource.file_path || t("appDetailUnavailable");
+          info.append(title, meta);
+          const badges = document.createElement("div");
+          badges.className = "actions";
+          badges.appendChild(pill(t("appTracksSkill"), "info"));
+          row.append(info, badges);
+          skillPanel.appendChild(row);
+        });
+      } else {
+        skillPanel.appendChild(empty(t("noSkillResources")));
+      }
+
+      const skillMetaProvider = relatedProviders.find((provider) => provider.skill_title || provider.skill_summary);
+      if (skillMetaProvider) {
+        const skillMeta = document.createElement("div");
+        skillMeta.className = "item";
+        const skillMetaTitle = document.createElement("h3");
+        skillMetaTitle.textContent = t("skillMetadata");
+        const name = document.createElement("div");
+        name.textContent = skillMetaProvider.skill_title || skillMetaProvider.name;
+        const summaryLine = document.createElement("div");
+        summaryLine.className = "muted";
+        summaryLine.textContent = skillMetaProvider.skill_summary || t("appDetailUnavailable");
+        skillMeta.append(skillMetaTitle, name, summaryLine);
+        host.append(summary, health, mcpPanel, skillPanel, skillMeta);
+        return;
+      }
+
+      host.append(summary, health, mcpPanel, skillPanel);
+    }
+
+    function selectApp(appID) {
+      state.selectedAppId = appID;
+      renderApps();
+      renderAppCatalog();
+      renderAppInspector();
+    }
+
+    function selectAppResource(appID, resourceID, endpoint) {
+      state.selectedAppId = appID;
+      renderApps();
+      const resourceSelect = $("resourceSelect");
+      if (resourceID && Array.from(resourceSelect.options).some((option) => option.value === resourceID)) {
+        resourceSelect.value = resourceID;
+      }
+      if (endpoint) {
+        $("endpointInput").value = endpoint;
+      }
+      updateSuggestedPath();
+      renderAppCatalog();
+      renderAppInspector();
+      setProviderMode("lazycat");
+    }
+
     function applySelectedApp() {
       const app = selectedApp();
       if (!app) return;
+      state.selectedAppId = app.app_id;
       $("slugInput").value = app.default_slug || app.app_id;
       const resourceSelect = $("resourceSelect");
       resourceSelect.replaceChildren();
@@ -753,21 +1175,78 @@
         $("endpointInput").value = "/mcp";
       }
       updateSuggestedPath();
+      renderAppCatalog();
+      renderAppInspector();
     }
 
     function selectedApp() {
-      const appID = $("appSelect").value;
+      const appID = state.selectedAppId || $("appSelect").value;
       return state.apps.find((app) => app.app_id === appID);
+    }
+
+
+    function providersForApp(appID) {
+      return state.providers.filter((provider) => provider.app_id === appID);
+    }
+
+    function providerSourceLabel(provider) {
+      if (provider.type === "custom") return t("providerOriginCustom");
+      if (provider.app_id) {
+        return `${provider.app_title || provider.app_id} · ${provider.resource_id || "default"}`;
+      }
+      return t("providerOriginUnknown");
+    }
+
+    function metaBlock(label, value) {
+      const block = document.createElement("div");
+      block.className = "meta-block";
+      const name = document.createElement("div");
+      name.className = "muted";
+      name.textContent = label;
+      const body = document.createElement("div");
+      body.className = "mono";
+      body.textContent = value;
+      block.append(name, body);
+      return block;
     }
 
     function updateSuggestedPath() {
       const slug = $("slugInput").value.trim();
-      $("suggestedPath").textContent = slug ? `/mcp/apps/${slug}` : "";
+      $("suggestedPath").textContent = slug ? `${t("suggestedPathLabel")}: /mcp/apps/${slug}` : "";
     }
 
     function updateCustomSuggestedPath() {
       const slug = $("customSlugInput").value.trim();
-      $("suggestedPath").textContent = slug ? `/mcp/apps/${slug}` : "";
+      $("suggestedPath").textContent = slug ? `${t("suggestedPathLabel")}: /mcp/apps/${slug}` : "";
+    }
+
+    function trackLabel(app) {
+      if (app.has_mcp && app.has_skills) return t("appTracksDual");
+      if (app.has_mcp) return t("appTracksMcp");
+      if (app.has_skills) return t("appTracksSkill");
+      return t("appTracksNone");
+    }
+
+    function trackPills(app) {
+      if (app.has_mcp && app.has_skills) return [pill(t("appTracksDual"), "ok")];
+      if (app.has_mcp) return [pill(t("appTracksMcp"), "ok")];
+      if (app.has_skills) return [pill(t("appTracksSkill"), "info")];
+      return [pill(t("appTracksNone"), "warn")];
+    }
+
+    function matchesTrackFilter(app, filter) {
+      if (filter === "mcp") return !!app.has_mcp && !app.has_skills;
+      if (filter === "skill") return !!app.has_skills && !app.has_mcp;
+      if (filter === "dual") return !!app.has_skills && !!app.has_mcp;
+      return true;
+    }
+
+    function updateTrackFilterButtons() {
+      document.querySelectorAll("[data-track-filter]").forEach((button) => {
+        const active = button.dataset.trackFilter === state.appTrackFilter;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
     }
 
     function renderTokens() {
@@ -808,15 +1287,39 @@
       });
     }
 
+    function filteredProviders() {
+      const query = state.providerSearch.trim().toLowerCase();
+      return state.providers.filter((provider) => {
+        if (!query) return true;
+        const haystack = [
+          provider.name || "",
+          provider.slug || "",
+          provider.public_endpoint || "",
+          provider.app_id || "",
+          provider.app_title || "",
+          provider.resource_id || "",
+          provider.kind || "",
+          provider.skill_title || "",
+          provider.skill_summary || ""
+        ].join(" ").toLowerCase();
+        return haystack.includes(query);
+      });
+    }
+
     function renderProviders() {
-      $("providerCount").textContent = String(state.providers.length);
+      const providers = filteredProviders();
+      $("providerCount").textContent = String(providers.length);
       const list = $("providerList");
       list.replaceChildren();
-      if (state.providers.length === 0) {
+      const page = paginate(providers, state.providerPage, state.pageSize);
+      state.providerPage = page.page;
+      $("providerPagerSummary").textContent = providers.length ? t("pagerSummary", { page: page.page, pages: page.pages, count: providers.length }) : "";
+      renderPager($("providerPager"), page.page, page.pages, (next) => { state.providerPage = next; renderProviders(); });
+      if (providers.length === 0) {
         list.appendChild(empty(t("noProviders")));
         return;
       }
-      state.providers.forEach((provider) => {
+      page.items.forEach((provider) => {
         const item = document.createElement("div");
         item.className = "item";
         const row = document.createElement("div");
@@ -832,7 +1335,10 @@
         upstream.textContent = provider.type === "custom"
           ? `${provider.base_url || ""}${provider.endpoint}${provider.header_count ? ` · ${provider.header_count} headers` : ""}`
           : `${provider.app_id}${provider.endpoint}`;
-        left.append(title, path, upstream);
+        const origin = document.createElement("div");
+        origin.className = "muted";
+        origin.textContent = `${t("providerOrigin")}: ${providerSourceLabel(provider)}`;
+        left.append(title, path, upstream, origin);
         const actions = document.createElement("div");
         actions.className = "actions";
         const copy = document.createElement("button");
@@ -850,7 +1356,24 @@
         del.addEventListener("click", () => deleteProvider(provider.id));
         actions.append(copy, toggle, del);
         row.append(left, actions);
-        item.append(row, pill(provider.type === "custom" ? t("upstreamCustom") : t("upstreamLazycat"), "info"), pill(provider.enabled ? t("available") : t("stopped"), provider.enabled ? "ok" : "warn"));
+        item.append(row,
+          pill(provider.type === "custom" ? t("upstreamCustom") : t("upstreamLazycat"), "info"),
+          pill(provider.enabled ? t("available") : t("stopped"), provider.enabled ? "ok" : "warn")
+        );
+        if (provider.kind) item.appendChild(pill(`${t("providerKindLabel")}: ${provider.kind.toUpperCase()}`, provider.kind === 'skill' ? 'info' : 'ok'));
+        item.appendChild(pill(provider.aggregate_ok ? t("aggregateHealthy") : t("aggregateDegraded"), provider.aggregate_ok ? 'ok' : 'warn'));
+        if (provider.aggregate_error) {
+          const err = document.createElement("div");
+          err.className = "muted";
+          err.textContent = `${t("aggregateErrorLabel")}: ${provider.aggregate_error}`;
+          item.appendChild(err);
+        }
+        if (provider.skill_title || provider.skill_summary) {
+          const skill = document.createElement("div");
+          skill.className = "muted";
+          skill.textContent = `${provider.skill_title || provider.name}${provider.skill_summary ? ` · ${provider.skill_summary}` : ""}`;
+          item.appendChild(skill);
+        }
         list.appendChild(item);
       });
     }
@@ -916,7 +1439,7 @@
     }
 
     function updateProviderSubmitState() {
-      $("saveProviderBtn").disabled = state.providerMode !== "custom" && state.apps.length === 0;
+      $("saveProviderBtn").disabled = state.providerMode !== "custom" && !selectedApp();
     }
 
     function formatBuildInfo(status) {
@@ -952,6 +1475,48 @@
       div.className = "empty";
       div.textContent = text;
       return div;
+    }
+
+    function paginate(items, page, pageSize) {
+      const total = items.length;
+      const pages = Math.max(1, Math.ceil(total / pageSize));
+      const current = Math.min(Math.max(1, page || 1), pages);
+      const start = (current - 1) * pageSize;
+      return { page: current, pages, items: items.slice(start, start + pageSize) };
+    }
+
+    function renderPager(host, page, pages, onJump) {
+      host.replaceChildren();
+      if (pages <= 1) return;
+      const prev = document.createElement("button");
+      prev.type = "button";
+      prev.className = "ghost compact";
+      prev.textContent = t("prevPage");
+      prev.disabled = page <= 1;
+      prev.addEventListener("click", () => onJump(page - 1));
+      const current = document.createElement("span");
+      current.className = "mono muted pager-current";
+      current.textContent = `${page} / ${pages}`;
+      const next = document.createElement("button");
+      next.type = "button";
+      next.className = "ghost compact";
+      next.textContent = t("nextPage");
+      next.disabled = page >= pages;
+      next.addEventListener("click", () => onJump(page + 1));
+      host.append(prev, current, next);
+    }
+
+    function openPublishDialog(mode = state.providerMode) {
+      const dialog = $("publishDialog");
+      setProviderMode(mode);
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', 'open');
+    }
+
+    function closePublishDialog() {
+      const dialog = $("publishDialog");
+      if (dialog.open && typeof dialog.close === 'function') dialog.close();
+      else dialog.removeAttribute('open');
     }
 
     function addHeaderRow(name = "", value = "") {
@@ -1037,6 +1602,7 @@
         body: JSON.stringify(body)
       });
       showToast(t("saved"));
+      closePublishDialog();
       await loadAll();
     }
 
@@ -1065,6 +1631,7 @@
       $("headerRows").replaceChildren();
       updateCustomSuggestedPath();
       showToast(t("saved"));
+      closePublishDialog();
       await loadAll();
     }
 
@@ -1144,9 +1711,32 @@
     document.querySelectorAll("[data-view-jump]").forEach((button) => {
       button.addEventListener("click", () => setActiveView(button.dataset.viewJump));
     });
+    document.querySelectorAll("[data-upstreams-subview]").forEach((button) => {
+      button.addEventListener("click", () => setUpstreamsSubView(button.dataset.upstreamsSubview));
+    });
     document.querySelectorAll("[data-lang-option]").forEach((button) => {
       button.addEventListener("click", () => setLanguage(button.dataset.langOption));
     });
+    document.querySelectorAll("[data-track-filter]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.appTrackFilter = button.dataset.trackFilter || "all";
+        state.appPage = 1;
+        renderAppCatalog();
+      });
+    });
+    $("openPublishModalBtn").addEventListener("click", () => openPublishDialog("lazycat"));
+    $("closePublishModalBtn").addEventListener("click", () => closePublishDialog());
+    $("appSearchInput").addEventListener("input", (event) => {
+      state.appSearch = event.target.value || "";
+      state.appPage = 1;
+      renderAppCatalog();
+    });
+    $("providerSearchInput").addEventListener("input", (event) => {
+      state.providerSearch = event.target.value || "";
+      state.providerPage = 1;
+      renderProviders();
+    });
+    $("publishDialog").addEventListener("cancel", () => closePublishDialog());
     window.addEventListener("hashchange", () => setActiveView(initialView(), false));
     window.addEventListener("popstate", () => setActiveView(initialView(), false));
 
