@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	upstreamToolRefreshTimeout = 8 * time.Second
-	upstreamToolCallTimeout    = 2 * time.Minute
+	upstreamToolRefreshTimeout            = 60 * time.Second
+	upstreamToolRefreshPerProviderTimeout = 10 * time.Second
+	upstreamToolCallTimeout               = 2 * time.Minute
 )
 
 var aggregateToolPartPattern = regexp.MustCompile(`[^A-Za-z0-9_]+`)
@@ -71,6 +72,8 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 
 	activeSlugs := make(map[string]bool, len(providers))
 	successSlugs := make(map[string]bool, len(providers))
+	a.upstreamFailureReasons = make(map[string]string, len(providers))
+	providerViews := make([]*ProviderDTOView, 0, len(providers))
 	added := make([]mcpserver.ServerTool, 0)
 	newRefsByName := make(map[string]upstreamToolRef)
 	usedNames := a.localToolNames()
@@ -79,18 +82,24 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 	}
 	for _, provider := range providers {
 		activeSlugs[provider.Slug] = true
+		providerViews = append(providerViews, &ProviderDTOView{Slug: provider.Slug, AppID: provider.AppID, ResourceID: derefString(provider.ResourceID)})
 		if provider.Transport != upstreamprovider.TransportStreamableHTTP {
 			successSlugs[provider.Slug] = true
+			delete(a.upstreamFailureReasons, provider.Slug)
 			continue
 		}
-		tools, err := a.listUpstreamTools(ctx, provider)
+		perProviderCtx, perProviderCancel := context.WithTimeout(ctx, upstreamToolRefreshPerProviderTimeout)
+		tools, err := a.listUpstreamTools(perProviderCtx, provider)
+		perProviderCancel()
 		if err != nil {
 			if a.logger != nil {
 				a.logger.Warn().Err(err).Str("provider", provider.Slug).Msg("list upstream mcp tools failed")
 			}
+			a.upstreamFailureReasons[provider.Slug] = err.Error()
 			continue
 		}
 		successSlugs[provider.Slug] = true
+		delete(a.upstreamFailureReasons, provider.Slug)
 		for name, ref := range oldRefs {
 			if ref.ProviderSlug == provider.Slug {
 				delete(usedNames, name)
@@ -139,6 +148,12 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 	a.upstreamToolMu.Lock()
 	a.upstreamToolRefs = finalRefs
 	a.upstreamToolMu.Unlock()
+
+	skillErrors := a.refreshSkillStates(ctx, providerViews)
+	for slug, reason := range skillErrors {
+		a.upstreamFailureReasons[slug] = reason
+	}
+	a.registerSkillResources()
 
 	if len(removeNames) > 0 {
 		a.mcpServer.DeleteTools(removeNames...)
@@ -209,6 +224,7 @@ func (a *App) newUpstreamMCPClient(provider *ent.UpstreamProvider, timeout time.
 	if err != nil {
 		return nil, err
 	}
+	headers = ensureStreamableHTTPAccept(headers)
 	return client.NewStreamableHttpClient(target,
 		transport.WithHTTPHeaders(headerMap(headers)),
 		transport.WithHTTPTimeout(timeout),
@@ -243,6 +259,47 @@ func (a *App) upstreamClientTarget(provider *ent.UpstreamProvider) (string, http
 	default:
 		return "", nil, fmt.Errorf("unsupported provider type: %s", provider.ProviderType)
 	}
+}
+
+func derefString(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return *v
+}
+
+func (a *App) aggregatedSlugs() map[string]bool {
+	out := make(map[string]bool)
+	a.upstreamToolMu.RLock()
+	defer a.upstreamToolMu.RUnlock()
+	for _, ref := range a.upstreamToolRefs {
+		out[ref.ProviderSlug] = true
+	}
+	return out
+}
+
+func (a *App) aggregateErrors() map[string]string {
+	out := make(map[string]string, len(a.upstreamFailureReasons))
+	for slug, reason := range a.upstreamFailureReasons {
+		out[slug] = reason
+	}
+	return out
+}
+
+func ensureStreamableHTTPAccept(headers http.Header) http.Header {
+	out := headers.Clone()
+	accept := strings.TrimSpace(out.Get("Accept"))
+	if accept == "" {
+		out.Set("Accept", "application/json, text/event-stream")
+		return out
+	}
+	lower := strings.ToLower(accept)
+	hasJSON := strings.Contains(lower, "application/json")
+	hasSSE := strings.Contains(lower, "text/event-stream")
+	if !hasJSON || !hasSSE {
+		out.Set("Accept", "application/json, text/event-stream")
+	}
+	return out
 }
 
 func (a *App) upstreamToolRef(name string) (upstreamToolRef, bool) {

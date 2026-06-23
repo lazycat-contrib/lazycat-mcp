@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -175,5 +176,99 @@ func TestRefreshUpstreamToolsRemovesDisabledProviderTools(t *testing.T) {
 	}
 	if app.mcpServer.GetTool("context7__echo") != nil {
 		t.Fatal("expected aggregate tool to be removed")
+	}
+}
+
+func TestSelectSkillResourceFallsBackToSingleSkillEvenWhenResourceIDDiffers(t *testing.T) {
+	resources := []SkillResource{{
+		AppID:      "cloud.lazycat.app.wx-data-helper-skill",
+		ResourceID: "wx-agent",
+		FilePath:   "/tmp/SKILL.md",
+		PublicPath: "/skills/cloud.lazycat.app.wx-data-helper-skill/wx-agent/SKILL.md",
+	}}
+	selected, err := selectSkillResource(resources, "default")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if selected.ResourceID != "wx-agent" {
+		t.Fatalf("resource_id = %q", selected.ResourceID)
+	}
+}
+
+func TestRefreshUpstreamToolsLoadsSkillContentFromResourceScanner(t *testing.T) {
+	ctx := context.Background()
+	skillStatesMu.Lock()
+	originalSkillStates := skillStatesMap
+	skillStatesMap = map[string]*skillState{}
+	skillStatesMu.Unlock()
+	defer func() {
+		skillStatesMu.Lock()
+		skillStatesMap = originalSkillStates
+		skillStatesMu.Unlock()
+	}()
+
+	root := t.TempDir()
+	skillDir := filepath.Join(root, "skills", "anna-skill", "wx-agent")
+	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	skillMD := "---\nname: 安娜智能下载\ndescription: 这是一个给 Agent 使用的技能页面。\n---\n## Prompt Examples\n- 帮我找一本书\n- 帮我批量下载\n"
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(skillMD), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	db, err := openDB(ctx, filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	providers := NewProviderService(db)
+	if _, err := providers.Create(ctx, ProviderInput{
+		Type:       "lazycat",
+		Name:       "Anna Skill",
+		Slug:       "anna-skill",
+		AppID:      "anna-skill",
+		ResourceID: "default",
+		Endpoint:   "/mcp",
+		Transport:  "streamable_http",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	app := &App{providers: providers, resources: NewResourceScanner(root)}
+	app.mcpServer = app.newMCPServer()
+	app.upstreamToolRefs = make(map[string]upstreamToolRef)
+	app.upstreamFailureReasons = make(map[string]string)
+	if err := app.refreshUpstreamTools(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	skill := skillContentBySlug("anna-skill")
+	if skill == nil {
+		t.Fatal("expected skill content to be registered")
+	}
+	if skill.Title != "安娜智能下载" {
+		t.Fatalf("title = %q", skill.Title)
+	}
+	if skill.Summary != "这是一个给 Agent 使用的技能页面。" {
+		t.Fatalf("summary = %q", skill.Summary)
+	}
+	if got := strings.Join(skill.PromptExamples, "|"); got != "帮我找一本书|帮我批量下载" {
+		t.Fatalf("prompts = %q", got)
+	}
+	if skill.ResourceURI != "skills://anna-skill/SKILL.md" {
+		t.Fatalf("resource uri = %q", skill.ResourceURI)
+	}
+
+	prompt, err := app.skillPromptTool().Handler(ctx, mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{"slug": "anna-skill"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	content, ok := prompt.Content[0].(mcp.TextContent)
+	if !ok {
+		t.Fatalf("content type = %T", prompt.Content[0])
+	}
+	if !strings.Contains(content.Text, "name: 安娜智能下载") {
+		t.Fatalf("unexpected prompt text: %s", content.Text)
 	}
 }
