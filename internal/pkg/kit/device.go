@@ -25,7 +25,7 @@ func (m *Manager) DeviceKits() []server.ServerTool {
 		),
 		Handler: m.deviceListHandler,
 	}
-	return []server.ServerTool{domainCheck}
+	return []server.ServerTool{domainCheck, m.deviceNotifyTool()}
 }
 
 func (m *Manager) deviceListHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {

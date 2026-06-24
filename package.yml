@@ -1,8 +1,8 @@
 package: cloud.lazycat.app.czyt.lazycat-mcp
-version: 0.2.0
+version: 0.2.2
 name: 懒猫MCP
 description: "懒猫微服MCP服务 - 使用本服务可以实现懒猫微服硬件、应用mcp和外部mcp的聚合"
-min_os_version: 1.5.2
+min_os_version: 1.6.0
 license: https://choosealicense.com/licenses/mit/
 homepage:
 author: czyt
@@ -10,6 +10,7 @@ author: czyt
 permissions:
   required:
     - lzcapp.user_delegate
+    - user.notify
 
 import_resources:
   - kind: skills
