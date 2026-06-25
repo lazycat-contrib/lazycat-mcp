@@ -272,3 +272,61 @@ func TestRefreshUpstreamToolsLoadsSkillContentFromResourceScanner(t *testing.T) 
 		t.Fatalf("unexpected prompt text: %s", content.Text)
 	}
 }
+
+
+func TestRefreshUpstreamToolsSkillOnlyProviderDoesNotProbeMCPTransport(t *testing.T) {
+	ctx := context.Background()
+	skillStatesMu.Lock()
+	originalSkillStates := skillStatesMap
+	skillStatesMap = map[string]*skillState{}
+	skillStatesMu.Unlock()
+	defer func() {
+		skillStatesMu.Lock()
+		skillStatesMap = originalSkillStates
+		skillStatesMu.Unlock()
+	}()
+
+	root := t.TempDir()
+	skillDir := filepath.Join(root, "skills", "anna-skill", "default")
+	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	skillMD := "---\nname: 安娜智能下载\ndescription: skill only\n---\n"
+	if err := os.WriteFile(filepath.Join(skillDir, "SKILL.md"), []byte(skillMD), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	db, err := openDB(ctx, filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	providers := NewProviderService(db)
+	if _, err := providers.Create(ctx, ProviderInput{
+		Type:       "lazycat",
+		Name:       "Anna Skill",
+		Slug:       "anna-skill",
+		AppID:      "anna-skill",
+		ResourceID: "default",
+		Endpoint:   "/mcp",
+		Transport:  "streamable_http",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	app := &App{providers: providers, resources: NewResourceScanner(root)}
+	app.mcpServer = app.newMCPServer()
+	app.upstreamToolRefs = make(map[string]upstreamToolRef)
+	app.upstreamHealthySlugs = make(map[string]bool)
+	app.upstreamFailureReasons = make(map[string]string)
+	if err := app.refreshUpstreamTools(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := app.aggregateErrors()["anna-skill"]; got != "" {
+		t.Fatalf("unexpected aggregate error for skill-only provider: %q", got)
+	}
+	if !app.aggregatedSlugs()["anna-skill"] {
+		t.Fatal("expected skill-only provider to be marked healthy")
+	}
+}

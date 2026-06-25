@@ -41,6 +41,7 @@ type App struct {
 	cleanupCancel          context.CancelFunc
 	upstreamToolMu         sync.RWMutex
 	upstreamToolRefs       map[string]upstreamToolRef
+	upstreamHealthySlugs   map[string]bool
 	upstreamFailureReasons map[string]string
 }
 
@@ -74,6 +75,7 @@ func New(ctx context.Context, cfg Config, logger *zlog.Logger) (*App, error) {
 	mcpServer := app.newMCPServer()
 	app.mcpServer = mcpServer
 	app.upstreamToolRefs = make(map[string]upstreamToolRef)
+	app.upstreamHealthySlugs = make(map[string]bool)
 	app.upstreamFailureReasons = make(map[string]string)
 	app.mcpHTTP = mcpserver.NewStreamableHTTPServer(mcpServer)
 	app.mcpSSE = mcpserver.NewSSEServer(mcpServer)
@@ -168,7 +170,7 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		a.requireMCPToken(a.mcpSSE).ServeHTTP(w, r)
 	case strings.HasPrefix(r.URL.Path, "/skills/"):
 		a.serveSkill(w, r)
-	case r.URL.Path == "/" || r.URL.Path == "/console.css":
+	case r.URL.Path == "/" || r.URL.Path == "/index.html" || strings.HasPrefix(r.URL.Path, "/assets/") || strings.HasSuffix(r.URL.Path, ".css") || strings.HasSuffix(r.URL.Path, ".js") || strings.HasSuffix(r.URL.Path, ".ico") || strings.HasSuffix(r.URL.Path, ".png") || strings.HasSuffix(r.URL.Path, ".svg"):
 		a.serveUI(w, r)
 	case strings.HasPrefix(r.URL.Path, "/api/"):
 		a.handleAPI(w, r)

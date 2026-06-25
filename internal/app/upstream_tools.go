@@ -62,6 +62,7 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	skillOnlySlugs := a.skillOnlyProviderSlugs(ctx, providers)
 
 	a.upstreamToolMu.RLock()
 	oldRefs := make(map[string]upstreamToolRef, len(a.upstreamToolRefs))
@@ -83,6 +84,11 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 	for _, provider := range providers {
 		activeSlugs[provider.Slug] = true
 		providerViews = append(providerViews, &ProviderDTOView{Slug: provider.Slug, AppID: provider.AppID, ResourceID: derefString(provider.ResourceID)})
+		if skillOnlySlugs[provider.Slug] {
+			successSlugs[provider.Slug] = true
+			delete(a.upstreamFailureReasons, provider.Slug)
+			continue
+		}
 		if provider.Transport != upstreamprovider.TransportStreamableHTTP {
 			successSlugs[provider.Slug] = true
 			delete(a.upstreamFailureReasons, provider.Slug)
@@ -147,6 +153,12 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 
 	a.upstreamToolMu.Lock()
 	a.upstreamToolRefs = finalRefs
+	a.upstreamHealthySlugs = make(map[string]bool, len(successSlugs))
+	for slug, ok := range successSlugs {
+		if ok {
+			a.upstreamHealthySlugs[slug] = true
+		}
+	}
 	a.upstreamToolMu.Unlock()
 
 	skillErrors := a.refreshSkillStates(ctx, providerViews)
@@ -268,12 +280,33 @@ func derefString(v *string) string {
 	return *v
 }
 
+func (a *App) skillOnlyProviderSlugs(ctx context.Context, providers []*ent.UpstreamProvider) map[string]bool {
+	out := make(map[string]bool)
+	if a == nil || a.resources == nil {
+		return out
+	}
+	index := a.resources.Scan(ctx)
+	for _, provider := range providers {
+		if strings.TrimSpace(provider.AppID) == "" {
+			continue
+		}
+		hasSkill := len(index.SkillsByApp[provider.AppID]) > 0
+		hasMCP := len(index.MCPByApp[provider.AppID]) > 0
+		if hasSkill && !hasMCP {
+			out[provider.Slug] = true
+		}
+	}
+	return out
+}
+
 func (a *App) aggregatedSlugs() map[string]bool {
 	out := make(map[string]bool)
 	a.upstreamToolMu.RLock()
 	defer a.upstreamToolMu.RUnlock()
-	for _, ref := range a.upstreamToolRefs {
-		out[ref.ProviderSlug] = true
+	for slug, ok := range a.upstreamHealthySlugs {
+		if ok {
+			out[slug] = true
+		}
 	}
 	return out
 }
