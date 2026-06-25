@@ -5,10 +5,10 @@ import ViewShell from './components/ViewShell.vue'
 
 // ── Navigation ──
 const views = [
-  { key: 'overview',   label: '总览',       icon: '◉' },
-  { key: 'upstreams',  label: '资源管理',   icon: '◇' },
-  { key: 'access',     label: '访问凭据',   icon: '○' },
-  { key: 'observability', label: '调用观测', icon: '◎' }
+  { key: 'overview',   labelZh: '总览',     labelEn: 'Overview',      icon: '◉' },
+  { key: 'upstreams',  labelZh: '资源管理', labelEn: 'Management',    icon: '◇' },
+  { key: 'access',     labelZh: '访问凭据', labelEn: 'Access tokens', icon: '○' },
+  { key: 'observability', labelZh: '调用观测', labelEn: 'Observability', icon: '◎' }
 ]
 
 const THEME_STORAGE_KEY = 'lazycat-mcp-theme'
@@ -69,6 +69,10 @@ let mediaQueryList = null
 let mediaQueryHandler = null
 let toastTimer = null
 const TOKEN_SECRET_STORAGE_KEY = 'lazycat-mcp-token-secrets'
+const OPEN_APP_TARGETS = {
+  'cloud.lazycat.app.lazycat-filedrop-skill': 'lazycat-filedrop',
+  'cloud.lazycat.app.lazycat-agent-browser-skill': 'lazycat-agent-browser'
+}
 
 const t = (zh, en) => state.language === 'en' ? en : zh
 
@@ -246,6 +250,54 @@ function providerHealthMeta(provider) {
 function upstreamStatusMeta(row) {
   if (!row.provider) return { tone: 'warn', text: t('待发布', 'Pending') }
   return row.provider.enabled ? { tone: 'ok', text: t('已上线', 'Live') } : { tone: 'soft', text: t('已下线', 'Offline') }
+}
+function normalizeDomain(value) {
+  if (!value) return ''
+  const trimmed = String(value).trim()
+  if (!trimmed) return ''
+  try {
+    if (trimmed.includes('://')) return new URL(trimmed).hostname.toLowerCase()
+  } catch {
+    return ''
+  }
+  return trimmed.replace(/^\.+|\.+$/g, '').toLowerCase()
+}
+function rootDomainFromHost(host) {
+  const normalized = normalizeDomain(host)
+  if (!normalized) return ''
+  const parts = normalized.split('.').filter(Boolean)
+  if (parts.length < 2) return ''
+  if (parts.length >= 4) return parts.slice(1).join('.')
+  return normalized
+}
+function openTargetPrefix(row) {
+  return OPEN_APP_TARGETS[row?.appId || row?.app?.app_id] || ''
+}
+function openRootDomain(row) {
+  const fromDomain = rootDomainFromHost(row?.app?.domain)
+  if (fromDomain) return fromDomain
+  const fromSubdomain = rootDomainFromHost(row?.app?.subdomain)
+  if (fromSubdomain) return fromSubdomain
+  const fromCurrent = rootDomainFromHost(window.location.hostname)
+  if (fromCurrent) return fromCurrent
+  return ''
+}
+function openURLForRow(row) {
+  const prefix = openTargetPrefix(row)
+  const root = openRootDomain(row)
+  if (!prefix || !root) return ''
+  return `https://${prefix}.${root}/`
+}
+function canOpenRow(row) {
+  return row?.kind === 'app' && !!openURLForRow(row)
+}
+function openApp(row) {
+  const url = openURLForRow(row)
+  if (!url) {
+    showToast(t('未获取到应用域名，无法自动打开', 'App domain not available, cannot open automatically'))
+    return
+  }
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 function viewUpstreamDetail(row) {
   detailRow.value = row
@@ -583,7 +635,7 @@ onBeforeUnmount(() => {
           @click="setActiveView(item.key)"
         >
           <span class="nav-icon">{{ item.icon }}</span>
-          <span class="nav-label">{{ item.label }}</span>
+          <span class="nav-label">{{ t(item.labelZh, item.labelEn) }}</span>
         </button>
       </nav>
 
@@ -696,6 +748,7 @@ onBeforeUnmount(() => {
               <button v-if="row.provider?.enabled" type="button" class="row-btn row-btn-toggle" @click="setProviderEnabled(row.provider, false).catch((error) => showToast(error.message))">{{ t('下线', 'Offline') }}</button>
               <button v-if="row.provider && !row.provider.enabled && row.kind === 'app'" type="button" class="row-btn row-btn-publish" @click="openPublishDialog(row)">{{ t('重新发布', 'Republish') }}</button>
               <button v-if="row.provider" type="button" class="row-btn row-btn-delete" @click="askDeleteProvider(row.provider)">{{ t('删除', 'Delete') }}</button>
+              <button v-if="canOpenRow(row)" type="button" class="row-btn row-btn-open" @click="openApp(row)">{{ t('打开', 'Open') }}</button>
               <button type="button" class="row-btn row-btn-detail" @click="viewUpstreamDetail(row)">{{ t('详情', 'Detail') }}</button>
             </div>
           </div>
