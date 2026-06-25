@@ -47,3 +47,4 @@
 - 2026-06-25：删除确认由浏览器原生 confirm 改为应用内统一弹窗（含入口信息、取消/确定删除按钮），避免系统弹窗风格突兀。
 - 2026-06-25：访问凭据页支持 Token 多次复制：创建时保存明文到本地（localStorage）并在已发放列表提供“复制 Token”按钮；删除 Token 时自动清理本地副本。
 - 2026-06-25：所有删除类操作统一走应用内确认弹窗（入口删除 / Token 删除 / 日志清空），并在弹窗中增加字段说明（字段名 + 字段值）后再确认执行。
+- 2026-06-25：资源管理列表新增“打开”按钮。对 `cloud.lazycat.app.lazycat-filedrop-skill` 与 `cloud.lazycat.app.lazycat-agent-browser-skill` 按规则拼接外部地址；三级域名不再硬编码，从懒猫应用返回的 `domain/subdomain` 自动提取（如 canway / nasw）。
