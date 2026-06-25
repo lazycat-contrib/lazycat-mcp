@@ -5,10 +5,10 @@ import ViewShell from './components/ViewShell.vue'
 
 // ── Navigation ──
 const views = [
-  { key: 'overview',   label: '总览',       icon: '◉' },
-  { key: 'upstreams',  label: '资源管理',   icon: '◇' },
-  { key: 'access',     label: '访问凭据',   icon: '○' },
-  { key: 'observability', label: '调用观测', icon: '◎' }
+  { key: 'overview',   labelZh: '总览',     labelEn: 'Overview',      icon: '◉' },
+  { key: 'upstreams',  labelZh: '资源管理', labelEn: 'Management',    icon: '◇' },
+  { key: 'access',     labelZh: '访问凭据', labelEn: 'Access tokens', icon: '○' },
+  { key: 'observability', labelZh: '调用观测', labelEn: 'Observability', icon: '◎' }
 ]
 
 const THEME_STORAGE_KEY = 'lazycat-mcp-theme'
@@ -635,7 +635,7 @@ onBeforeUnmount(() => {
           @click="setActiveView(item.key)"
         >
           <span class="nav-icon">{{ item.icon }}</span>
-          <span class="nav-label">{{ item.label }}</span>
+          <span class="nav-label">{{ t(item.labelZh, item.labelEn) }}</span>
         </button>
       </nav>
 
