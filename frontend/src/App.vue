@@ -69,11 +69,6 @@ let mediaQueryList = null
 let mediaQueryHandler = null
 let toastTimer = null
 const TOKEN_SECRET_STORAGE_KEY = 'lazycat-mcp-token-secrets'
-const OPEN_APP_TARGETS = {
-  'cloud.lazycat.app.lazycat-filedrop-skill': 'lazycat-filedrop',
-  'cloud.lazycat.app.lazycat-agent-browser-skill': 'lazycat-agent-browser'
-}
-
 const t = (zh, en) => state.language === 'en' ? en : zh
 
 function setLang(lang) {
@@ -271,7 +266,17 @@ function rootDomainFromHost(host) {
   return normalized
 }
 function openTargetPrefix(row) {
-  return OPEN_APP_TARGETS[row?.appId || row?.app?.app_id] || ''
+  const subdomain = normalizeDomain(row?.app?.subdomain)
+  if (subdomain) {
+    const first = subdomain.split('.').filter(Boolean)[0]
+    if (first) return first
+  }
+  const domain = normalizeDomain(row?.app?.domain)
+  if (domain) {
+    const parts = domain.split('.').filter(Boolean)
+    if (parts.length >= 3) return parts[0]
+  }
+  return ''
 }
 function openRootDomain(row) {
   const fromDomain = rootDomainFromHost(row?.app?.domain)
