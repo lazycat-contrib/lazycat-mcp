@@ -278,6 +278,8 @@ function openRootDomain(row) {
   if (fromDomain) return fromDomain
   const fromSubdomain = rootDomainFromHost(row?.app?.subdomain)
   if (fromSubdomain) return fromSubdomain
+  const fromCurrent = rootDomainFromHost(window.location.hostname)
+  if (fromCurrent) return fromCurrent
   return ''
 }
 function openURLForRow(row) {
