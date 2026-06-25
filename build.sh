@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-GO_BIN=${GO_BIN:-/usr/local/go/bin/go}
+GO_BIN=${GO_BIN:-go}
 
 VERSION=${VERSION:-$(awk '/^version:/ {print $2; exit}' package.yml | tr -d '"')}
 VERSION=${VERSION:-dev}
