@@ -7,7 +7,7 @@ require (
 	gitee.com/linakesi/lzc-sdk v0.1.1-0.20260616013851-7bbb8766e5a2
 	github.com/lib-x/entsqlite v0.2.3
 	github.com/likexian/whois v1.15.7
-	github.com/mark3labs/mcp-go v0.55.0
+	github.com/mark3labs/mcp-go v0.55.1
 	github.com/rs/zerolog v1.34.0
 	google.golang.org/grpc v1.81.1
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
