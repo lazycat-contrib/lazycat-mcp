@@ -31,3 +31,4 @@ dist/resources
 frontend/node_modules/
 internal/web/dist/
 .tmp/\nmcp
+.tmp/ mcp

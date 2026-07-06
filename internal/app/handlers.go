@@ -570,9 +570,13 @@ func (a *App) cleanupOrphanProviders(ctx context.Context, installed map[string]*
 
 
 func (a *App) selfToolNames() []string {
-	names := []string{"lazycat_mcp_provider_list", "domain_base_info_lookup"}
+	names := []string{
+		"lazycat_mcp_provider_list",
+		"domain_base_info_lookup",
+		"skill_prompt",
+	}
 	if a.kit != nil && a.kit.Available() {
-		names = append(names, "lazycat_device_query", "lazycat_power")
+		names = append(names, "lazycat_device_query", "lazycat_power", "lazycat_device_notify")
 	}
 	return names
 }

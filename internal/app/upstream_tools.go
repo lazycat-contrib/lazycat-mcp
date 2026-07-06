@@ -38,7 +38,12 @@ func (a *App) refreshUpstreamToolsAsync() {
 	if a == nil || a.mcpServer == nil || a.providers == nil {
 		return
 	}
+	// Deduplicate concurrent refresh calls to avoid tool name suffix collisions.
+	if !a.refreshUpstreamRunning.CompareAndSwap(false, true) {
+		return
+	}
 	go func() {
+		defer a.refreshUpstreamRunning.Store(false)
 		a.refreshUpstreamToolsBestEffort(context.Background())
 	}()
 }
