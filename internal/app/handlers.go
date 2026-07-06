@@ -55,6 +55,8 @@ func (a *App) handleAPI(w http.ResponseWriter, r *http.Request) {
 		a.handleListProviders(w, r)
 	case path == "/providers" && r.Method == http.MethodPost:
 		a.handleCreateProvider(w, r)
+	case path == "/providers/batch" && r.Method == http.MethodPost:
+		a.handleBatchProviders(w, r)
 	case strings.HasPrefix(path, "/providers/"):
 		a.handleProviderByID(w, r, strings.TrimPrefix(path, "/providers/"))
 	case path == "/mcp-logs" && r.Method == http.MethodGet:
@@ -99,8 +101,24 @@ func (a *App) handleApps(w http.ResponseWriter, r *http.Request) {
 	appIDs := index.AppIDs()
 	appsByID := a.lazycatAppsByID(r)
 
-	out := make([]appOption, 0, len(appIDs))
-	for _, appID := range appIDs {
+	// Auto-cleanup: remove providers whose lazycat app has been uninstalled.
+
+	out := make([]appOption, 0, len(appIDs)+1)
+
+	// Always include self so built-in MCP tools are visible as a manageable resource.
+	selfAppIDs := appIDs
+	hasSelf := false
+	for _, id := range selfAppIDs {
+		if id == selfPackageID {
+			hasSelf = true
+			break
+		}
+	}
+	if !hasSelf {
+		selfAppIDs = append(selfAppIDs, selfPackageID)
+	}
+
+	for _, appID := range selfAppIDs {
 		if appID == "system" || strings.HasPrefix(appID, ".") {
 			continue
 		}
@@ -108,15 +126,24 @@ func (a *App) handleApps(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		info := appsByID[appID]
+		mcpProviders := index.MCPByApp[appID]
+		// Self app: inject synthetic MCP resource so built-in tools are publishable.
+		if appID == selfPackageID && len(mcpProviders) == 0 {
+			mcpProviders = []MCPResource{{
+				AppID:      selfPackageID,
+				ResourceID: "default",
+				Endpoint:   "/mcp",
+			}}
+		}
 		item := appOption{
 			AppID:               appID,
 			Title:               appID,
-			HasMCP:              len(index.MCPByApp[appID]) > 0,
+			HasMCP:              len(mcpProviders) > 0,
 			HasSkills:           len(index.SkillsByApp[appID]) > 0,
 			DefaultSlug:         appID,
-			DefaultEndpoint:     index.DefaultMCPEndpoint(appID),
+			DefaultEndpoint:     firstNonEmpty(index.DefaultMCPEndpoint(appID), "/mcp"),
 			DefaultMCPResource:  index.DefaultMCPResourceID(appID),
-			MCPProviders:        index.MCPByApp[appID],
+			MCPProviders:        mcpProviders,
 			Skills:              index.SkillsByApp[appID],
 			SuggestedPublicPath: "/mcp/apps/" + appID,
 		}
@@ -271,6 +298,24 @@ func (a *App) handleListProviders(w http.ResponseWriter, r *http.Request) {
 			providers[i].Kind = "mcp"
 		}
 	}
+	// Populate upstream tool names from live tool refs.
+	a.upstreamToolMu.RLock()
+	for i := range providers {
+		var names []string
+		if providers[i].AppID == selfPackageID {
+			names = a.selfToolNames()
+		} else {
+			for _, ref := range a.upstreamToolRefs {
+				if ref.ProviderSlug == providers[i].Slug {
+					names = append(names, ref.UpstreamName)
+				}
+			}
+		}
+		if len(names) > 0 {
+			providers[i].UpstreamToolNames = names
+		}
+	}
+	a.upstreamToolMu.RUnlock()
 	writeJSON(w, http.StatusOK, map[string]any{"providers": providers})
 }
 
@@ -432,6 +477,104 @@ func statusFromEntError(err error) int {
 		return http.StatusConflict
 	}
 	return http.StatusInternalServerError
+}
+
+
+func (a *App) handleBatchProviders(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		IDs       []int  `json:"ids"`
+		Action    string `json:"action"`
+		Transport string `json:"transport,omitempty"`
+	}
+	if err := readJSON(r, &req); err != nil {
+		writeAPIError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if len(req.IDs) == 0 {
+		writeAPIError(w, http.StatusBadRequest, "ids is required")
+		return
+	}
+	if len(req.IDs) > 100 {
+		writeAPIError(w, http.StatusBadRequest, "batch limit is 100")
+		return
+	}
+
+	type result struct {
+		ID     int    `json:"id"`
+		Status string `json:"status"`
+		Error  string `json:"error,omitempty"`
+	}
+	var results []result
+
+	for _, id := range req.IDs {
+		res := result{ID: id, Status: "ok"}
+		switch req.Action {
+		case "enable":
+			input := ProviderInput{Enabled: boolPtr(true)}
+			if _, err := a.providers.Update(r.Context(), id, input); err != nil {
+				res.Status = "error"
+				res.Error = err.Error()
+			}
+		case "disable":
+			input := ProviderInput{Enabled: boolPtr(false)}
+			if _, err := a.providers.Update(r.Context(), id, input); err != nil {
+				res.Status = "error"
+				res.Error = err.Error()
+			}
+		case "delete":
+			if err := a.providers.Delete(r.Context(), id); err != nil {
+				res.Status = "error"
+				res.Error = err.Error()
+			}
+		case "update_transport":
+			transport := strings.TrimSpace(req.Transport)
+			if transport == "" {
+				transport = "streamable_http"
+			}
+			input := ProviderInput{Transport: transport}
+			if _, err := a.providers.Update(r.Context(), id, input); err != nil {
+				res.Status = "error"
+				res.Error = err.Error()
+			}
+		default:
+			res.Status = "error"
+			res.Error = "unknown action: " + req.Action
+		}
+		results = append(results, res)
+	}
+
+	a.refreshUpstreamToolsBestEffort(r.Context())
+	writeJSON(w, http.StatusOK, map[string]any{"results": results})
+}
+
+func boolPtr(v bool) *bool { return &v }
+
+
+func (a *App) cleanupOrphanProviders(ctx context.Context, installed map[string]*sys.AppInfo) {
+	providers, err := a.providers.List(ctx)
+	if err != nil {
+		return
+	}
+	for _, p := range providers {
+		if p.Type != "lazycat" || p.AppID == "" || p.AppID == selfPackageID {
+			continue
+		}
+		if _, ok := installed[p.AppID]; !ok {
+			if a.logger != nil {
+				a.logger.Info().Str("slug", p.Slug).Str("app_id", p.AppID).Msg("auto-cleaning orphan provider")
+			}
+			_ = a.providers.Delete(ctx, p.ID)
+		}
+	}
+}
+
+
+func (a *App) selfToolNames() []string {
+	names := []string{"lazycat_mcp_provider_list", "domain_base_info_lookup"}
+	if a.kit != nil && a.kit.Available() {
+		names = append(names, "lazycat_device_query", "lazycat_power")
+	}
+	return names
 }
 
 func firstNonEmpty(values ...string) string {

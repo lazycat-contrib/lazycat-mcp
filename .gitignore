@@ -30,3 +30,4 @@ dist/resources
 # Frontend build artifacts
 frontend/node_modules/
 internal/web/dist/
+.tmp/\nmcp
