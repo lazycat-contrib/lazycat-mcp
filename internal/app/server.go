@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -43,6 +44,7 @@ type App struct {
 	upstreamToolRefs       map[string]upstreamToolRef
 	upstreamHealthySlugs   map[string]bool
 	upstreamFailureReasons map[string]string
+	refreshUpstreamRunning atomic.Bool
 }
 
 func New(ctx context.Context, cfg Config, logger *zlog.Logger) (*App, error) {
