@@ -103,13 +103,13 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 		if provider.ProviderType == upstreamprovider.ProviderTypeLazycat {
 			successSlugs[provider.Slug] = true
 			delete(a.upstreamFailureReasons, provider.Slug)
-			if provider.Transport == upstreamprovider.TransportStreamableHTTP {
+			if provider.Transport == upstreamprovider.TransportStreamableHTTP || provider.Transport == upstreamprovider.TransportSse {
 				perProviderCtx, perProviderCancel := context.WithTimeout(ctx, upstreamToolRefreshPerProviderTimeout)
 				tools, err := a.listUpstreamTools(perProviderCtx, provider)
 				perProviderCancel()
 				if err != nil {
 					if a.logger != nil {
-						a.logger.Debug().Err(err).Str("provider", provider.Slug).Msg("lazycat tool probe skipped (non-critical)")
+						a.logger.Warn().Err(err).Str("provider", provider.Slug).Msg("lazycat tool probe skipped (non-critical)")
 					}
 					continue
 				}
@@ -140,7 +140,7 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 		}
 
 		// Custom providers: probe MCP endpoint.
-		if provider.Transport != upstreamprovider.TransportStreamableHTTP {
+		if provider.Transport != upstreamprovider.TransportStreamableHTTP && provider.Transport != upstreamprovider.TransportSse {
 			successSlugs[provider.Slug] = true
 			delete(a.upstreamFailureReasons, provider.Slug)
 			continue
@@ -251,7 +251,7 @@ func (a *App) callUpstreamTool(ctx context.Context, ref upstreamToolRef, request
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
-	if provider.Transport != upstreamprovider.TransportStreamableHTTP {
+	if provider.Transport != upstreamprovider.TransportStreamableHTTP && provider.Transport != upstreamprovider.TransportSse {
 		return mcp.NewToolResultError("upstream tool aggregation only supports streamable_http providers"), nil
 	}
 	callCtx, cancel := context.WithTimeout(ctx, upstreamToolCallTimeout)
@@ -287,11 +287,20 @@ func (a *App) newUpstreamMCPClient(provider *ent.UpstreamProvider, timeout time.
 	if err != nil {
 		return nil, err
 	}
-	headers = ensureStreamableHTTPAccept(headers)
-	return client.NewStreamableHttpClient(target,
-		transport.WithHTTPHeaders(headerMap(headers)),
-		transport.WithHTTPTimeout(timeout),
-	)
+
+	switch provider.Transport {
+	case upstreamprovider.TransportSse:
+		return client.NewSSEMCPClient(target,
+			transport.WithHeaders(headerMap(headers)),
+			transport.WithHTTPClient(&http.Client{Timeout: timeout}),
+		)
+	default:
+		headers = ensureStreamableHTTPAccept(headers)
+		return client.NewStreamableHttpClient(target,
+			transport.WithHTTPHeaders(headerMap(headers)),
+			transport.WithHTTPTimeout(timeout),
+		)
+	}
 }
 
 func (a *App) upstreamClientTarget(provider *ent.UpstreamProvider) (string, http.Header, error) {

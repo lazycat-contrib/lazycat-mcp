@@ -282,11 +282,23 @@ function toolNameToLabel(name) {
 }
 function providerToolTags(row) {
   const names = row.provider?.upstream_tool_names
-  if (!names || !names.length) return []
-  return names.map((name, i) => ({
-    label: toolNameToLabel(name),
-    tone: TOOL_TAG_TONES[i % TOOL_TAG_TONES.length]
-  }))
+  if (names && names.length) {
+    return names.map((name, i) => ({
+      label: toolNameToLabel(name),
+      tone: TOOL_TAG_TONES[i % TOOL_TAG_TONES.length]
+    }))
+  }
+  // Built-in self-app: show known tools even when unpublished
+  if ((row.provider?.app_id || row.appId) === 'cloud.lazycat.app.czyt.lazycat-mcp') {
+    return [
+      { label: t('设备管理','Devices'), tone: 'info' },
+      { label: t('设备通知','Notify'), tone: 'info' },
+      { label: t('电源控制','Power'), tone: 'warn' },
+      { label: t('域名查询','Domain'), tone: 'ok' },
+      { label: t('Provider','Providers'), tone: 'soft' }
+    ]
+  }
+  return []
 }
 function openTargetPrefix(row) {
   const subdomain = normalizeDomain(row?.app?.subdomain)
@@ -849,7 +861,7 @@ onBeforeUnmount(() => {
             <div class="mono">{{ row.resourceId }}</div>
             <div class="mono">{{ (row.provider?.transport || row.app?.default_transport || 'streamable_http').replace('streamable_http','Streamable HTTP').replace('sse','SSE') }}</div>
             <div class="mono">{{ row.endpoint }}</div>
-            <span class="pill" :class="row.provider?.app_id === 'cloud.lazycat.app.czyt.lazycat-mcp' ? 'info' : (row.kind === 'custom' ? 'soft' : 'ok')">{{ row.provider?.app_id === 'cloud.lazycat.app.czyt.lazycat-mcp' ? t('内置','Built-in') : (row.kind === 'custom' ? t('自定义','Custom') : t('懒猫应用','LazyCat')) }}</span>
+            <span class="pill" :class="(row.provider?.app_id || row.appId) === 'cloud.lazycat.app.czyt.lazycat-mcp' ? 'info' : (row.kind === 'custom' ? 'soft' : 'ok')">{{ (row.provider?.app_id || row.appId) === 'cloud.lazycat.app.czyt.lazycat-mcp' ? t('内置','Built-in') : (row.kind === 'custom' ? t('自定义','Custom') : t('懒猫应用','LazyCat')) }}</span>
             <div class="tag-row">
               <template v-if="providerToolTags(row).length">
                 <span v-for="tag in providerToolTags(row).slice(0,3)" :key="tag.label" class="pill" :class="tag.tone" style="font-size:10px;padding:0 5px">{{ tag.label }}</span>
