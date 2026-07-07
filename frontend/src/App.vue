@@ -281,12 +281,14 @@ function toolNameToLabel(name) {
   return meaningful.slice(0, 2).join(' ') || name.replace('lazycat_','').substring(0, 18)
 }
 function providerToolTags(row) {
-  const names = row.provider?.upstream_tool_names
-  if (!names || !names.length) return []
-  return names.map((name, i) => ({
-    label: toolNameToLabel(name),
-    tone: TOOL_TAG_TONES[i % TOOL_TAG_TONES.length]
-  }))
+  const names = row.provider?.upstream_tool_names || row.resource?.tool_names
+  if (names && names.length) {
+    return names.map((name, i) => ({
+      label: toolNameToLabel(name),
+      tone: TOOL_TAG_TONES[i % TOOL_TAG_TONES.length]
+    }))
+  }
+  return []
 }
 function openTargetPrefix(row) {
   const subdomain = normalizeDomain(row?.app?.subdomain)
@@ -849,7 +851,7 @@ onBeforeUnmount(() => {
             <div class="mono">{{ row.resourceId }}</div>
             <div class="mono">{{ (row.provider?.transport || row.app?.default_transport || 'streamable_http').replace('streamable_http','Streamable HTTP').replace('sse','SSE') }}</div>
             <div class="mono">{{ row.endpoint }}</div>
-            <span class="pill" :class="row.provider?.app_id === 'cloud.lazycat.app.czyt.lazycat-mcp' ? 'info' : (row.kind === 'custom' ? 'soft' : 'ok')">{{ row.provider?.app_id === 'cloud.lazycat.app.czyt.lazycat-mcp' ? t('内置','Built-in') : (row.kind === 'custom' ? t('自定义','Custom') : t('懒猫应用','LazyCat')) }}</span>
+            <span class="pill" :class="(row.provider?.app_id || row.appId) === 'cloud.lazycat.app.czyt.lazycat-mcp' ? 'info' : (row.kind === 'custom' ? 'soft' : 'ok')">{{ (row.provider?.app_id || row.appId) === 'cloud.lazycat.app.czyt.lazycat-mcp' ? t('内置','Built-in') : (row.kind === 'custom' ? t('自定义','Custom') : t('懒猫应用','LazyCat')) }}</span>
             <div class="tag-row">
               <template v-if="providerToolTags(row).length">
                 <span v-for="tag in providerToolTags(row).slice(0,3)" :key="tag.label" class="pill" :class="tag.tone" style="font-size:10px;padding:0 5px">{{ tag.label }}</span>
@@ -867,7 +869,7 @@ onBeforeUnmount(() => {
               <button v-if="!row.provider && row.kind === 'app'" type="button" class="row-btn row-btn-publish" @click="openPublishDialog(row)">{{ t('发布', 'Publish') }}</button>
               <button v-if="row.provider?.enabled" type="button" class="row-btn row-btn-toggle" @click="setProviderEnabled(row.provider, false).catch((error) => showToast(error.message))">{{ t('下线', 'Offline') }}</button>
               <button v-if="row.provider && !row.provider.enabled" type="button" class="row-btn row-btn-toggle" @click="setProviderEnabled(row.provider, true).catch((error) => showToast(error.message))">{{ t('启用', 'Enable') }}</button>
-              <button v-if="row.provider" type="button" class="row-btn row-btn-delete" @click="askDeleteProvider(row.provider)">{{ t('删除', 'Delete') }}</button>
+              <button v-if="row.provider && !row.provider.enabled" type="button" class="row-btn row-btn-delete" @click="askDeleteProvider(row.provider)">{{ t('删除', 'Delete') }}</button>
               <button v-if="canOpenRow(row)" type="button" class="row-btn row-btn-open" @click="openApp(row)">{{ t('打开', 'Open') }}</button>
               <button type="button" class="row-btn row-btn-detail" @click="viewUpstreamDetail(row)">{{ t('详情', 'Detail') }}</button>
             </div>

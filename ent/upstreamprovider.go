@@ -27,6 +27,8 @@ type UpstreamProvider struct {
 	ProviderType upstreamprovider.ProviderType `json:"provider_type,omitempty"`
 	// AppID holds the value of the "app_id" field.
 	AppID string `json:"app_id,omitempty"`
+	// OwnerUserID holds the value of the "owner_user_id" field.
+	OwnerUserID string `json:"owner_user_id,omitempty"`
 	// DeployID holds the value of the "deploy_id" field.
 	DeployID *string `json:"deploy_id,omitempty"`
 	// AppTitle holds the value of the "app_title" field.
@@ -61,7 +63,7 @@ func (*UpstreamProvider) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case upstreamprovider.FieldID:
 			values[i] = new(sql.NullInt64)
-		case upstreamprovider.FieldName, upstreamprovider.FieldDescription, upstreamprovider.FieldSlug, upstreamprovider.FieldProviderType, upstreamprovider.FieldAppID, upstreamprovider.FieldDeployID, upstreamprovider.FieldAppTitle, upstreamprovider.FieldResourceID, upstreamprovider.FieldBaseURL, upstreamprovider.FieldEndpoint, upstreamprovider.FieldHeaders, upstreamprovider.FieldTransport:
+		case upstreamprovider.FieldName, upstreamprovider.FieldDescription, upstreamprovider.FieldSlug, upstreamprovider.FieldProviderType, upstreamprovider.FieldAppID, upstreamprovider.FieldOwnerUserID, upstreamprovider.FieldDeployID, upstreamprovider.FieldAppTitle, upstreamprovider.FieldResourceID, upstreamprovider.FieldBaseURL, upstreamprovider.FieldEndpoint, upstreamprovider.FieldHeaders, upstreamprovider.FieldTransport:
 			values[i] = new(sql.NullString)
 		case upstreamprovider.FieldLastUsedAt, upstreamprovider.FieldCreatedAt, upstreamprovider.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -116,6 +118,12 @@ func (_m *UpstreamProvider) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field app_id", values[i])
 			} else if value.Valid {
 				_m.AppID = value.String
+			}
+		case upstreamprovider.FieldOwnerUserID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field owner_user_id", values[i])
+			} else if value.Valid {
+				_m.OwnerUserID = value.String
 			}
 		case upstreamprovider.FieldDeployID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -240,6 +248,9 @@ func (_m *UpstreamProvider) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("app_id=")
 	builder.WriteString(_m.AppID)
+	builder.WriteString(", ")
+	builder.WriteString("owner_user_id=")
+	builder.WriteString(_m.OwnerUserID)
 	builder.WriteString(", ")
 	if v := _m.DeployID; v != nil {
 		builder.WriteString("deploy_id=")

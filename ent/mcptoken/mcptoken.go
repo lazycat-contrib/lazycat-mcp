@@ -19,6 +19,10 @@ const (
 	FieldTokenHash = "token_hash"
 	// FieldPrefix holds the string denoting the prefix field in the database.
 	FieldPrefix = "prefix"
+	// FieldOwnerUserID holds the string denoting the owner_user_id field in the database.
+	FieldOwnerUserID = "owner_user_id"
+	// FieldOwnerIsAdmin holds the string denoting the owner_is_admin field in the database.
+	FieldOwnerIsAdmin = "owner_is_admin"
 	// FieldEnabled holds the string denoting the enabled field in the database.
 	FieldEnabled = "enabled"
 	// FieldExpiresAt holds the string denoting the expires_at field in the database.
@@ -39,6 +43,8 @@ var Columns = []string{
 	FieldName,
 	FieldTokenHash,
 	FieldPrefix,
+	FieldOwnerUserID,
+	FieldOwnerIsAdmin,
 	FieldEnabled,
 	FieldExpiresAt,
 	FieldLastUsedAt,
@@ -63,6 +69,12 @@ var (
 	TokenHashValidator func(string) error
 	// PrefixValidator is a validator for the "prefix" field. It is called by the builders before save.
 	PrefixValidator func(string) error
+	// DefaultOwnerUserID holds the default value on creation for the "owner_user_id" field.
+	DefaultOwnerUserID string
+	// OwnerUserIDValidator is a validator for the "owner_user_id" field. It is called by the builders before save.
+	OwnerUserIDValidator func(string) error
+	// DefaultOwnerIsAdmin holds the default value on creation for the "owner_is_admin" field.
+	DefaultOwnerIsAdmin bool
 	// DefaultEnabled holds the default value on creation for the "enabled" field.
 	DefaultEnabled bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -94,6 +106,16 @@ func ByTokenHash(opts ...sql.OrderTermOption) OrderOption {
 // ByPrefix orders the results by the prefix field.
 func ByPrefix(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPrefix, opts...).ToFunc()
+}
+
+// ByOwnerUserID orders the results by the owner_user_id field.
+func ByOwnerUserID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOwnerUserID, opts...).ToFunc()
+}
+
+// ByOwnerIsAdmin orders the results by the owner_is_admin field.
+func ByOwnerIsAdmin(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOwnerIsAdmin, opts...).ToFunc()
 }
 
 // ByEnabled orders the results by the enabled field.

@@ -1,5 +1,5 @@
 package: cloud.lazycat.app.czyt.lazycat-mcp
-version: 2026.06.24
+version: 2026.07.08.0050
 name: 懒猫MCP
 description: "懒猫微服MCP服务 - 使用本服务可以实现懒猫微服硬件、应用mcp和外部mcp的聚合"
 min_os_version: 1.6.0

@@ -19,6 +19,8 @@ func (MCPToken) Fields() []ent.Field {
 		field.String("name").NotEmpty().MaxLen(80),
 		field.String("token_hash").Sensitive().NotEmpty().Unique(),
 		field.String("prefix").NotEmpty().MaxLen(16),
+		field.String("owner_user_id").Default("").MaxLen(120),
+		field.Bool("owner_is_admin").Default(false),
 		field.Bool("enabled").Default(true),
 		field.Time("expires_at").Optional().Nillable(),
 		field.Time("last_used_at").Optional().Nillable(),
@@ -32,5 +34,6 @@ func (MCPToken) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("token_hash").Unique(),
 		index.Fields("enabled"),
+		index.Fields("owner_user_id"),
 	}
 }

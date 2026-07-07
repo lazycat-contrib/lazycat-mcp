@@ -24,6 +24,8 @@ const (
 	FieldProviderType = "type"
 	// FieldAppID holds the string denoting the app_id field in the database.
 	FieldAppID = "app_id"
+	// FieldOwnerUserID holds the string denoting the owner_user_id field in the database.
+	FieldOwnerUserID = "owner_user_id"
 	// FieldDeployID holds the string denoting the deploy_id field in the database.
 	FieldDeployID = "deploy_id"
 	// FieldAppTitle holds the string denoting the app_title field in the database.
@@ -58,6 +60,7 @@ var Columns = []string{
 	FieldSlug,
 	FieldProviderType,
 	FieldAppID,
+	FieldOwnerUserID,
 	FieldDeployID,
 	FieldAppTitle,
 	FieldResourceID,
@@ -92,6 +95,10 @@ var (
 	DefaultAppID string
 	// AppIDValidator is a validator for the "app_id" field. It is called by the builders before save.
 	AppIDValidator func(string) error
+	// DefaultOwnerUserID holds the default value on creation for the "owner_user_id" field.
+	DefaultOwnerUserID string
+	// OwnerUserIDValidator is a validator for the "owner_user_id" field. It is called by the builders before save.
+	OwnerUserIDValidator func(string) error
 	// DeployIDValidator is a validator for the "deploy_id" field. It is called by the builders before save.
 	DeployIDValidator func(string) error
 	// AppTitleValidator is a validator for the "app_title" field. It is called by the builders before save.
@@ -199,6 +206,11 @@ func ByProviderType(opts ...sql.OrderTermOption) OrderOption {
 // ByAppID orders the results by the app_id field.
 func ByAppID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAppID, opts...).ToFunc()
+}
+
+// ByOwnerUserID orders the results by the owner_user_id field.
+func ByOwnerUserID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOwnerUserID, opts...).ToFunc()
 }
 
 // ByDeployID orders the results by the deploy_id field.

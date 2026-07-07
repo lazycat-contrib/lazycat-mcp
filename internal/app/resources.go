@@ -13,10 +13,11 @@ import (
 )
 
 type MCPResource struct {
-	AppID      string `json:"app_id"`
-	ResourceID string `json:"resource_id"`
-	Endpoint   string `json:"endpoint"`
-	FilePath   string `json:"file_path,omitempty"`
+	AppID      string   `json:"app_id"`
+	ResourceID string   `json:"resource_id"`
+	Endpoint   string   `json:"endpoint"`
+	FilePath   string   `json:"file_path,omitempty"`
+	ToolNames  []string `json:"tool_names,omitempty"`
 }
 
 type SkillResource struct {

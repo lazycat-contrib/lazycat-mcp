@@ -69,6 +69,16 @@ func Prefix(v string) predicate.MCPToken {
 	return predicate.MCPToken(sql.FieldEQ(FieldPrefix, v))
 }
 
+// OwnerUserID applies equality check predicate on the "owner_user_id" field. It's identical to OwnerUserIDEQ.
+func OwnerUserID(v string) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldEQ(FieldOwnerUserID, v))
+}
+
+// OwnerIsAdmin applies equality check predicate on the "owner_is_admin" field. It's identical to OwnerIsAdminEQ.
+func OwnerIsAdmin(v bool) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldEQ(FieldOwnerIsAdmin, v))
+}
+
 // Enabled applies equality check predicate on the "enabled" field. It's identical to EnabledEQ.
 func Enabled(v bool) predicate.MCPToken {
 	return predicate.MCPToken(sql.FieldEQ(FieldEnabled, v))
@@ -287,6 +297,81 @@ func PrefixEqualFold(v string) predicate.MCPToken {
 // PrefixContainsFold applies the ContainsFold predicate on the "prefix" field.
 func PrefixContainsFold(v string) predicate.MCPToken {
 	return predicate.MCPToken(sql.FieldContainsFold(FieldPrefix, v))
+}
+
+// OwnerUserIDEQ applies the EQ predicate on the "owner_user_id" field.
+func OwnerUserIDEQ(v string) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldEQ(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDNEQ applies the NEQ predicate on the "owner_user_id" field.
+func OwnerUserIDNEQ(v string) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldNEQ(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDIn applies the In predicate on the "owner_user_id" field.
+func OwnerUserIDIn(vs ...string) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldIn(FieldOwnerUserID, vs...))
+}
+
+// OwnerUserIDNotIn applies the NotIn predicate on the "owner_user_id" field.
+func OwnerUserIDNotIn(vs ...string) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldNotIn(FieldOwnerUserID, vs...))
+}
+
+// OwnerUserIDGT applies the GT predicate on the "owner_user_id" field.
+func OwnerUserIDGT(v string) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldGT(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDGTE applies the GTE predicate on the "owner_user_id" field.
+func OwnerUserIDGTE(v string) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldGTE(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDLT applies the LT predicate on the "owner_user_id" field.
+func OwnerUserIDLT(v string) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldLT(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDLTE applies the LTE predicate on the "owner_user_id" field.
+func OwnerUserIDLTE(v string) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldLTE(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDContains applies the Contains predicate on the "owner_user_id" field.
+func OwnerUserIDContains(v string) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldContains(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDHasPrefix applies the HasPrefix predicate on the "owner_user_id" field.
+func OwnerUserIDHasPrefix(v string) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldHasPrefix(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDHasSuffix applies the HasSuffix predicate on the "owner_user_id" field.
+func OwnerUserIDHasSuffix(v string) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldHasSuffix(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDEqualFold applies the EqualFold predicate on the "owner_user_id" field.
+func OwnerUserIDEqualFold(v string) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldEqualFold(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDContainsFold applies the ContainsFold predicate on the "owner_user_id" field.
+func OwnerUserIDContainsFold(v string) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldContainsFold(FieldOwnerUserID, v))
+}
+
+// OwnerIsAdminEQ applies the EQ predicate on the "owner_is_admin" field.
+func OwnerIsAdminEQ(v bool) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldEQ(FieldOwnerIsAdmin, v))
+}
+
+// OwnerIsAdminNEQ applies the NEQ predicate on the "owner_is_admin" field.
+func OwnerIsAdminNEQ(v bool) predicate.MCPToken {
+	return predicate.MCPToken(sql.FieldNEQ(FieldOwnerIsAdmin, v))
 }
 
 // EnabledEQ applies the EQ predicate on the "enabled" field.

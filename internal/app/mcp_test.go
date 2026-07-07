@@ -26,6 +26,7 @@ func TestProviderListToolOnlyExposesGatewayEndpoints(t *testing.T) {
 		BaseURL:     "https://secret.example.com",
 		Endpoint:    "/mcp",
 		Transport:   "streamable_http",
+		OwnerUserID: "u1",
 		Headers: []ProviderHeader{
 			{Name: "Authorization", Value: "Bearer secret"},
 		},
@@ -34,6 +35,7 @@ func TestProviderListToolOnlyExposesGatewayEndpoints(t *testing.T) {
 	}
 
 	app := &App{providers: providers}
+	ctx = contextWithMCPToken(ctx, TokenDTO{OwnerUserID: "u1"})
 	result, err := app.providerListTool().Handler(ctx, mcp.CallToolRequest{})
 	if err != nil {
 		t.Fatal(err)
@@ -65,12 +67,13 @@ func TestProviderListToolIncludesSkillMetadata(t *testing.T) {
 
 	providers := NewProviderService(db)
 	if _, err := providers.Create(ctx, ProviderInput{
-		Type:      "custom",
-		Name:      "Anna Skill",
-		Slug:      "anna-skill",
-		BaseURL:   "https://skill.example.com",
-		Endpoint:  "/mcp",
-		Transport: "streamable_http",
+		Type:        "custom",
+		Name:        "Anna Skill",
+		Slug:        "anna-skill",
+		BaseURL:     "https://skill.example.com",
+		Endpoint:    "/mcp",
+		Transport:   "streamable_http",
+		OwnerUserID: "u1",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -96,6 +99,7 @@ func TestProviderListToolIncludesSkillMetadata(t *testing.T) {
 	}()
 
 	app := &App{providers: providers, upstreamFailureReasons: map[string]string{"anna-skill": "missing SKILL.md"}}
+	ctx = contextWithMCPToken(ctx, TokenDTO{OwnerUserID: "u1"})
 	result, err := app.providerListTool().Handler(ctx, mcp.CallToolRequest{})
 	if err != nil {
 		t.Fatal(err)
@@ -120,5 +124,32 @@ func TestProviderListToolIncludesSkillMetadata(t *testing.T) {
 		if !strings.Contains(content.Text, want) {
 			t.Fatalf("expected %s in %s", want, content.Text)
 		}
+	}
+}
+
+func TestBuiltinToolFilterHidesPowerForNonAdmin(t *testing.T) {
+	app := &App{}
+	tools := []mcp.Tool{
+		mcp.NewTool("domain_base_info_lookup"),
+		mcp.NewTool("lazycat_power"),
+		mcp.NewTool("cloud.lazycat.app.czyt.lazycat-mcp__lazycat_power"),
+	}
+	filtered := app.filterBuiltinToolsByRole(context.Background(), tools)
+	if len(filtered) != 0 {
+		t.Fatalf("filtered tools = %#v", filtered)
+	}
+}
+
+func TestBuiltinToolFilterAllowsPowerForAdmin(t *testing.T) {
+	app := &App{}
+	ctx := context.WithValue(context.Background(), lazycatRoleContextKey{}, "admin")
+	tools := []mcp.Tool{
+		mcp.NewTool("domain_base_info_lookup"),
+		mcp.NewTool("lazycat_power"),
+		mcp.NewTool("cloud.lazycat.app.czyt.lazycat-mcp__lazycat_power"),
+	}
+	filtered := app.filterBuiltinToolsByRole(ctx, tools)
+	if len(filtered) != len(tools) {
+		t.Fatalf("filtered tools = %#v", filtered)
 	}
 }

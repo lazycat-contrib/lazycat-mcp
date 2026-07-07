@@ -21,6 +21,7 @@ func (UpstreamProvider) Fields() []ent.Field {
 		field.String("slug").NotEmpty().MaxLen(180).Unique(),
 		field.Enum("provider_type").StorageKey("type").Values("lazycat", "custom").Default("lazycat"),
 		field.String("app_id").Default("").MaxLen(180),
+		field.String("owner_user_id").Default("").MaxLen(120),
 		field.String("deploy_id").Optional().Nillable().MaxLen(180),
 		field.String("app_title").Optional().Nillable().MaxLen(180),
 		field.String("resource_id").Optional().Nillable().MaxLen(80),
@@ -41,6 +42,7 @@ func (UpstreamProvider) Indexes() []ent.Index {
 		index.Fields("slug").Unique(),
 		index.Fields("provider_type"),
 		index.Fields("app_id"),
+		index.Fields("owner_user_id"),
 		index.Fields("enabled"),
 	}
 }

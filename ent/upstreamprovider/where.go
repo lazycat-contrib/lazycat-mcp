@@ -74,6 +74,11 @@ func AppID(v string) predicate.UpstreamProvider {
 	return predicate.UpstreamProvider(sql.FieldEQ(FieldAppID, v))
 }
 
+// OwnerUserID applies equality check predicate on the "owner_user_id" field. It's identical to OwnerUserIDEQ.
+func OwnerUserID(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldEQ(FieldOwnerUserID, v))
+}
+
 // DeployID applies equality check predicate on the "deploy_id" field. It's identical to DeployIDEQ.
 func DeployID(v string) predicate.UpstreamProvider {
 	return predicate.UpstreamProvider(sql.FieldEQ(FieldDeployID, v))
@@ -412,6 +417,71 @@ func AppIDEqualFold(v string) predicate.UpstreamProvider {
 // AppIDContainsFold applies the ContainsFold predicate on the "app_id" field.
 func AppIDContainsFold(v string) predicate.UpstreamProvider {
 	return predicate.UpstreamProvider(sql.FieldContainsFold(FieldAppID, v))
+}
+
+// OwnerUserIDEQ applies the EQ predicate on the "owner_user_id" field.
+func OwnerUserIDEQ(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldEQ(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDNEQ applies the NEQ predicate on the "owner_user_id" field.
+func OwnerUserIDNEQ(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldNEQ(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDIn applies the In predicate on the "owner_user_id" field.
+func OwnerUserIDIn(vs ...string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldIn(FieldOwnerUserID, vs...))
+}
+
+// OwnerUserIDNotIn applies the NotIn predicate on the "owner_user_id" field.
+func OwnerUserIDNotIn(vs ...string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldNotIn(FieldOwnerUserID, vs...))
+}
+
+// OwnerUserIDGT applies the GT predicate on the "owner_user_id" field.
+func OwnerUserIDGT(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldGT(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDGTE applies the GTE predicate on the "owner_user_id" field.
+func OwnerUserIDGTE(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldGTE(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDLT applies the LT predicate on the "owner_user_id" field.
+func OwnerUserIDLT(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldLT(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDLTE applies the LTE predicate on the "owner_user_id" field.
+func OwnerUserIDLTE(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldLTE(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDContains applies the Contains predicate on the "owner_user_id" field.
+func OwnerUserIDContains(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldContains(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDHasPrefix applies the HasPrefix predicate on the "owner_user_id" field.
+func OwnerUserIDHasPrefix(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldHasPrefix(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDHasSuffix applies the HasSuffix predicate on the "owner_user_id" field.
+func OwnerUserIDHasSuffix(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldHasSuffix(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDEqualFold applies the EqualFold predicate on the "owner_user_id" field.
+func OwnerUserIDEqualFold(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldEqualFold(FieldOwnerUserID, v))
+}
+
+// OwnerUserIDContainsFold applies the ContainsFold predicate on the "owner_user_id" field.
+func OwnerUserIDContainsFold(v string) predicate.UpstreamProvider {
+	return predicate.UpstreamProvider(sql.FieldContainsFold(FieldOwnerUserID, v))
 }
 
 // DeployIDEQ applies the EQ predicate on the "deploy_id" field.
