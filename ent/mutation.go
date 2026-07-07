@@ -1195,21 +1195,23 @@ func (m *MCPCallLogMutation) ResetEdge(name string) error {
 // MCPTokenMutation represents an operation that mutates the MCPToken nodes in the graph.
 type MCPTokenMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	name          *string
-	token_hash    *string
-	prefix        *string
-	enabled       *bool
-	expires_at    *time.Time
-	last_used_at  *time.Time
-	created_at    *time.Time
-	updated_at    *time.Time
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*MCPToken, error)
-	predicates    []predicate.MCPToken
+	op             Op
+	typ            string
+	id             *int
+	name           *string
+	token_hash     *string
+	prefix         *string
+	owner_user_id  *string
+	owner_is_admin *bool
+	enabled        *bool
+	expires_at     *time.Time
+	last_used_at   *time.Time
+	created_at     *time.Time
+	updated_at     *time.Time
+	clearedFields  map[string]struct{}
+	done           bool
+	oldValue       func(context.Context) (*MCPToken, error)
+	predicates     []predicate.MCPToken
 }
 
 var _ ent.Mutation = (*MCPTokenMutation)(nil)
@@ -1416,6 +1418,78 @@ func (m *MCPTokenMutation) OldPrefix(ctx context.Context) (v string, err error) 
 // ResetPrefix resets all changes to the "prefix" field.
 func (m *MCPTokenMutation) ResetPrefix() {
 	m.prefix = nil
+}
+
+// SetOwnerUserID sets the "owner_user_id" field.
+func (m *MCPTokenMutation) SetOwnerUserID(s string) {
+	m.owner_user_id = &s
+}
+
+// OwnerUserID returns the value of the "owner_user_id" field in the mutation.
+func (m *MCPTokenMutation) OwnerUserID() (r string, exists bool) {
+	v := m.owner_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOwnerUserID returns the old "owner_user_id" field's value of the MCPToken entity.
+// If the MCPToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPTokenMutation) OldOwnerUserID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOwnerUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOwnerUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOwnerUserID: %w", err)
+	}
+	return oldValue.OwnerUserID, nil
+}
+
+// ResetOwnerUserID resets all changes to the "owner_user_id" field.
+func (m *MCPTokenMutation) ResetOwnerUserID() {
+	m.owner_user_id = nil
+}
+
+// SetOwnerIsAdmin sets the "owner_is_admin" field.
+func (m *MCPTokenMutation) SetOwnerIsAdmin(b bool) {
+	m.owner_is_admin = &b
+}
+
+// OwnerIsAdmin returns the value of the "owner_is_admin" field in the mutation.
+func (m *MCPTokenMutation) OwnerIsAdmin() (r bool, exists bool) {
+	v := m.owner_is_admin
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOwnerIsAdmin returns the old "owner_is_admin" field's value of the MCPToken entity.
+// If the MCPToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPTokenMutation) OldOwnerIsAdmin(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOwnerIsAdmin is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOwnerIsAdmin requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOwnerIsAdmin: %w", err)
+	}
+	return oldValue.OwnerIsAdmin, nil
+}
+
+// ResetOwnerIsAdmin resets all changes to the "owner_is_admin" field.
+func (m *MCPTokenMutation) ResetOwnerIsAdmin() {
+	m.owner_is_admin = nil
 }
 
 // SetEnabled sets the "enabled" field.
@@ -1658,7 +1732,7 @@ func (m *MCPTokenMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MCPTokenMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 10)
 	if m.name != nil {
 		fields = append(fields, mcptoken.FieldName)
 	}
@@ -1667,6 +1741,12 @@ func (m *MCPTokenMutation) Fields() []string {
 	}
 	if m.prefix != nil {
 		fields = append(fields, mcptoken.FieldPrefix)
+	}
+	if m.owner_user_id != nil {
+		fields = append(fields, mcptoken.FieldOwnerUserID)
+	}
+	if m.owner_is_admin != nil {
+		fields = append(fields, mcptoken.FieldOwnerIsAdmin)
 	}
 	if m.enabled != nil {
 		fields = append(fields, mcptoken.FieldEnabled)
@@ -1697,6 +1777,10 @@ func (m *MCPTokenMutation) Field(name string) (ent.Value, bool) {
 		return m.TokenHash()
 	case mcptoken.FieldPrefix:
 		return m.Prefix()
+	case mcptoken.FieldOwnerUserID:
+		return m.OwnerUserID()
+	case mcptoken.FieldOwnerIsAdmin:
+		return m.OwnerIsAdmin()
 	case mcptoken.FieldEnabled:
 		return m.Enabled()
 	case mcptoken.FieldExpiresAt:
@@ -1722,6 +1806,10 @@ func (m *MCPTokenMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldTokenHash(ctx)
 	case mcptoken.FieldPrefix:
 		return m.OldPrefix(ctx)
+	case mcptoken.FieldOwnerUserID:
+		return m.OldOwnerUserID(ctx)
+	case mcptoken.FieldOwnerIsAdmin:
+		return m.OldOwnerIsAdmin(ctx)
 	case mcptoken.FieldEnabled:
 		return m.OldEnabled(ctx)
 	case mcptoken.FieldExpiresAt:
@@ -1761,6 +1849,20 @@ func (m *MCPTokenMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPrefix(v)
+		return nil
+	case mcptoken.FieldOwnerUserID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOwnerUserID(v)
+		return nil
+	case mcptoken.FieldOwnerIsAdmin:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOwnerIsAdmin(v)
 		return nil
 	case mcptoken.FieldEnabled:
 		v, ok := value.(bool)
@@ -1870,6 +1972,12 @@ func (m *MCPTokenMutation) ResetField(name string) error {
 	case mcptoken.FieldPrefix:
 		m.ResetPrefix()
 		return nil
+	case mcptoken.FieldOwnerUserID:
+		m.ResetOwnerUserID()
+		return nil
+	case mcptoken.FieldOwnerIsAdmin:
+		m.ResetOwnerIsAdmin()
+		return nil
 	case mcptoken.FieldEnabled:
 		m.ResetEnabled()
 		return nil
@@ -1948,6 +2056,7 @@ type UpstreamProviderMutation struct {
 	slug          *string
 	provider_type *upstreamprovider.ProviderType
 	app_id        *string
+	owner_user_id *string
 	deploy_id     *string
 	app_title     *string
 	resource_id   *string
@@ -2254,6 +2363,42 @@ func (m *UpstreamProviderMutation) OldAppID(ctx context.Context) (v string, err 
 // ResetAppID resets all changes to the "app_id" field.
 func (m *UpstreamProviderMutation) ResetAppID() {
 	m.app_id = nil
+}
+
+// SetOwnerUserID sets the "owner_user_id" field.
+func (m *UpstreamProviderMutation) SetOwnerUserID(s string) {
+	m.owner_user_id = &s
+}
+
+// OwnerUserID returns the value of the "owner_user_id" field in the mutation.
+func (m *UpstreamProviderMutation) OwnerUserID() (r string, exists bool) {
+	v := m.owner_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOwnerUserID returns the old "owner_user_id" field's value of the UpstreamProvider entity.
+// If the UpstreamProvider object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UpstreamProviderMutation) OldOwnerUserID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOwnerUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOwnerUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOwnerUserID: %w", err)
+	}
+	return oldValue.OwnerUserID, nil
+}
+
+// ResetOwnerUserID resets all changes to the "owner_user_id" field.
+func (m *UpstreamProviderMutation) ResetOwnerUserID() {
+	m.owner_user_id = nil
 }
 
 // SetDeployID sets the "deploy_id" field.
@@ -2751,7 +2896,7 @@ func (m *UpstreamProviderMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UpstreamProviderMutation) Fields() []string {
-	fields := make([]string, 0, 16)
+	fields := make([]string, 0, 17)
 	if m.name != nil {
 		fields = append(fields, upstreamprovider.FieldName)
 	}
@@ -2766,6 +2911,9 @@ func (m *UpstreamProviderMutation) Fields() []string {
 	}
 	if m.app_id != nil {
 		fields = append(fields, upstreamprovider.FieldAppID)
+	}
+	if m.owner_user_id != nil {
+		fields = append(fields, upstreamprovider.FieldOwnerUserID)
 	}
 	if m.deploy_id != nil {
 		fields = append(fields, upstreamprovider.FieldDeployID)
@@ -2818,6 +2966,8 @@ func (m *UpstreamProviderMutation) Field(name string) (ent.Value, bool) {
 		return m.ProviderType()
 	case upstreamprovider.FieldAppID:
 		return m.AppID()
+	case upstreamprovider.FieldOwnerUserID:
+		return m.OwnerUserID()
 	case upstreamprovider.FieldDeployID:
 		return m.DeployID()
 	case upstreamprovider.FieldAppTitle:
@@ -2859,6 +3009,8 @@ func (m *UpstreamProviderMutation) OldField(ctx context.Context, name string) (e
 		return m.OldProviderType(ctx)
 	case upstreamprovider.FieldAppID:
 		return m.OldAppID(ctx)
+	case upstreamprovider.FieldOwnerUserID:
+		return m.OldOwnerUserID(ctx)
 	case upstreamprovider.FieldDeployID:
 		return m.OldDeployID(ctx)
 	case upstreamprovider.FieldAppTitle:
@@ -2924,6 +3076,13 @@ func (m *UpstreamProviderMutation) SetField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetAppID(v)
+		return nil
+	case upstreamprovider.FieldOwnerUserID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOwnerUserID(v)
 		return nil
 	case upstreamprovider.FieldDeployID:
 		v, ok := value.(string)
@@ -3104,6 +3263,9 @@ func (m *UpstreamProviderMutation) ResetField(name string) error {
 		return nil
 	case upstreamprovider.FieldAppID:
 		m.ResetAppID()
+		return nil
+	case upstreamprovider.FieldOwnerUserID:
+		m.ResetOwnerUserID()
 		return nil
 	case upstreamprovider.FieldDeployID:
 		m.ResetDeployID()

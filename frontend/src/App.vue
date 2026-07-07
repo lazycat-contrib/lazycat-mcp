@@ -281,22 +281,12 @@ function toolNameToLabel(name) {
   return meaningful.slice(0, 2).join(' ') || name.replace('lazycat_','').substring(0, 18)
 }
 function providerToolTags(row) {
-  const names = row.provider?.upstream_tool_names
+  const names = row.provider?.upstream_tool_names || row.resource?.tool_names
   if (names && names.length) {
     return names.map((name, i) => ({
       label: toolNameToLabel(name),
       tone: TOOL_TAG_TONES[i % TOOL_TAG_TONES.length]
     }))
-  }
-  // Built-in self-app: show known tools even when unpublished
-  if ((row.provider?.app_id || row.appId) === 'cloud.lazycat.app.czyt.lazycat-mcp') {
-    return [
-      { label: t('设备管理','Devices'), tone: 'info' },
-      { label: t('设备通知','Notify'), tone: 'info' },
-      { label: t('电源控制','Power'), tone: 'warn' },
-      { label: t('域名查询','Domain'), tone: 'ok' },
-      { label: t('Provider','Providers'), tone: 'soft' }
-    ]
   }
   return []
 }
@@ -879,7 +869,7 @@ onBeforeUnmount(() => {
               <button v-if="!row.provider && row.kind === 'app'" type="button" class="row-btn row-btn-publish" @click="openPublishDialog(row)">{{ t('发布', 'Publish') }}</button>
               <button v-if="row.provider?.enabled" type="button" class="row-btn row-btn-toggle" @click="setProviderEnabled(row.provider, false).catch((error) => showToast(error.message))">{{ t('下线', 'Offline') }}</button>
               <button v-if="row.provider && !row.provider.enabled" type="button" class="row-btn row-btn-toggle" @click="setProviderEnabled(row.provider, true).catch((error) => showToast(error.message))">{{ t('启用', 'Enable') }}</button>
-              <button v-if="row.provider" type="button" class="row-btn row-btn-delete" @click="askDeleteProvider(row.provider)">{{ t('删除', 'Delete') }}</button>
+              <button v-if="row.provider && !row.provider.enabled" type="button" class="row-btn row-btn-delete" @click="askDeleteProvider(row.provider)">{{ t('删除', 'Delete') }}</button>
               <button v-if="canOpenRow(row)" type="button" class="row-btn row-btn-open" @click="openApp(row)">{{ t('打开', 'Open') }}</button>
               <button type="button" class="row-btn row-btn-detail" @click="viewUpstreamDetail(row)">{{ t('详情', 'Detail') }}</button>
             </div>

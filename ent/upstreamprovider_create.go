@@ -74,6 +74,20 @@ func (_c *UpstreamProviderCreate) SetNillableAppID(v *string) *UpstreamProviderC
 	return _c
 }
 
+// SetOwnerUserID sets the "owner_user_id" field.
+func (_c *UpstreamProviderCreate) SetOwnerUserID(v string) *UpstreamProviderCreate {
+	_c.mutation.SetOwnerUserID(v)
+	return _c
+}
+
+// SetNillableOwnerUserID sets the "owner_user_id" field if the given value is not nil.
+func (_c *UpstreamProviderCreate) SetNillableOwnerUserID(v *string) *UpstreamProviderCreate {
+	if v != nil {
+		_c.SetOwnerUserID(*v)
+	}
+	return _c
+}
+
 // SetDeployID sets the "deploy_id" field.
 func (_c *UpstreamProviderCreate) SetDeployID(v string) *UpstreamProviderCreate {
 	_c.mutation.SetDeployID(v)
@@ -271,6 +285,10 @@ func (_c *UpstreamProviderCreate) defaults() {
 		v := upstreamprovider.DefaultAppID
 		_c.mutation.SetAppID(v)
 	}
+	if _, ok := _c.mutation.OwnerUserID(); !ok {
+		v := upstreamprovider.DefaultOwnerUserID
+		_c.mutation.SetOwnerUserID(v)
+	}
 	if _, ok := _c.mutation.Endpoint(); !ok {
 		v := upstreamprovider.DefaultEndpoint
 		_c.mutation.SetEndpoint(v)
@@ -334,6 +352,14 @@ func (_c *UpstreamProviderCreate) check() error {
 	if v, ok := _c.mutation.AppID(); ok {
 		if err := upstreamprovider.AppIDValidator(v); err != nil {
 			return &ValidationError{Name: "app_id", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.app_id": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.OwnerUserID(); !ok {
+		return &ValidationError{Name: "owner_user_id", err: errors.New(`ent: missing required field "UpstreamProvider.owner_user_id"`)}
+	}
+	if v, ok := _c.mutation.OwnerUserID(); ok {
+		if err := upstreamprovider.OwnerUserIDValidator(v); err != nil {
+			return &ValidationError{Name: "owner_user_id", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.owner_user_id": %w`, err)}
 		}
 	}
 	if v, ok := _c.mutation.DeployID(); ok {
@@ -429,6 +455,10 @@ func (_c *UpstreamProviderCreate) createSpec() (*UpstreamProvider, *sqlgraph.Cre
 	if value, ok := _c.mutation.AppID(); ok {
 		_spec.SetField(upstreamprovider.FieldAppID, field.TypeString, value)
 		_node.AppID = value
+	}
+	if value, ok := _c.mutation.OwnerUserID(); ok {
+		_spec.SetField(upstreamprovider.FieldOwnerUserID, field.TypeString, value)
+		_node.OwnerUserID = value
 	}
 	if value, ok := _c.mutation.DeployID(); ok {
 		_spec.SetField(upstreamprovider.FieldDeployID, field.TypeString, value)

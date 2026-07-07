@@ -23,6 +23,10 @@ type MCPToken struct {
 	TokenHash string `json:"-"`
 	// Prefix holds the value of the "prefix" field.
 	Prefix string `json:"prefix,omitempty"`
+	// OwnerUserID holds the value of the "owner_user_id" field.
+	OwnerUserID string `json:"owner_user_id,omitempty"`
+	// OwnerIsAdmin holds the value of the "owner_is_admin" field.
+	OwnerIsAdmin bool `json:"owner_is_admin,omitempty"`
 	// Enabled holds the value of the "enabled" field.
 	Enabled bool `json:"enabled,omitempty"`
 	// ExpiresAt holds the value of the "expires_at" field.
@@ -41,11 +45,11 @@ func (*MCPToken) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case mcptoken.FieldEnabled:
+		case mcptoken.FieldOwnerIsAdmin, mcptoken.FieldEnabled:
 			values[i] = new(sql.NullBool)
 		case mcptoken.FieldID:
 			values[i] = new(sql.NullInt64)
-		case mcptoken.FieldName, mcptoken.FieldTokenHash, mcptoken.FieldPrefix:
+		case mcptoken.FieldName, mcptoken.FieldTokenHash, mcptoken.FieldPrefix, mcptoken.FieldOwnerUserID:
 			values[i] = new(sql.NullString)
 		case mcptoken.FieldExpiresAt, mcptoken.FieldLastUsedAt, mcptoken.FieldCreatedAt, mcptoken.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -87,6 +91,18 @@ func (_m *MCPToken) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field prefix", values[i])
 			} else if value.Valid {
 				_m.Prefix = value.String
+			}
+		case mcptoken.FieldOwnerUserID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field owner_user_id", values[i])
+			} else if value.Valid {
+				_m.OwnerUserID = value.String
+			}
+		case mcptoken.FieldOwnerIsAdmin:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field owner_is_admin", values[i])
+			} else if value.Valid {
+				_m.OwnerIsAdmin = value.Bool
 			}
 		case mcptoken.FieldEnabled:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -163,6 +179,12 @@ func (_m *MCPToken) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("prefix=")
 	builder.WriteString(_m.Prefix)
+	builder.WriteString(", ")
+	builder.WriteString("owner_user_id=")
+	builder.WriteString(_m.OwnerUserID)
+	builder.WriteString(", ")
+	builder.WriteString("owner_is_admin=")
+	builder.WriteString(fmt.Sprintf("%v", _m.OwnerIsAdmin))
 	builder.WriteString(", ")
 	builder.WriteString("enabled=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Enabled))

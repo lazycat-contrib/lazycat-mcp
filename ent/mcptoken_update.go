@@ -70,6 +70,34 @@ func (_u *MCPTokenUpdate) SetNillablePrefix(v *string) *MCPTokenUpdate {
 	return _u
 }
 
+// SetOwnerUserID sets the "owner_user_id" field.
+func (_u *MCPTokenUpdate) SetOwnerUserID(v string) *MCPTokenUpdate {
+	_u.mutation.SetOwnerUserID(v)
+	return _u
+}
+
+// SetNillableOwnerUserID sets the "owner_user_id" field if the given value is not nil.
+func (_u *MCPTokenUpdate) SetNillableOwnerUserID(v *string) *MCPTokenUpdate {
+	if v != nil {
+		_u.SetOwnerUserID(*v)
+	}
+	return _u
+}
+
+// SetOwnerIsAdmin sets the "owner_is_admin" field.
+func (_u *MCPTokenUpdate) SetOwnerIsAdmin(v bool) *MCPTokenUpdate {
+	_u.mutation.SetOwnerIsAdmin(v)
+	return _u
+}
+
+// SetNillableOwnerIsAdmin sets the "owner_is_admin" field if the given value is not nil.
+func (_u *MCPTokenUpdate) SetNillableOwnerIsAdmin(v *bool) *MCPTokenUpdate {
+	if v != nil {
+		_u.SetOwnerIsAdmin(*v)
+	}
+	return _u
+}
+
 // SetEnabled sets the "enabled" field.
 func (_u *MCPTokenUpdate) SetEnabled(v bool) *MCPTokenUpdate {
 	_u.mutation.SetEnabled(v)
@@ -188,6 +216,11 @@ func (_u *MCPTokenUpdate) check() error {
 			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "MCPToken.prefix": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.OwnerUserID(); ok {
+		if err := mcptoken.OwnerUserIDValidator(v); err != nil {
+			return &ValidationError{Name: "owner_user_id", err: fmt.Errorf(`ent: validator failed for field "MCPToken.owner_user_id": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -211,6 +244,12 @@ func (_u *MCPTokenUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Prefix(); ok {
 		_spec.SetField(mcptoken.FieldPrefix, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.OwnerUserID(); ok {
+		_spec.SetField(mcptoken.FieldOwnerUserID, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.OwnerIsAdmin(); ok {
+		_spec.SetField(mcptoken.FieldOwnerIsAdmin, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.Enabled(); ok {
 		_spec.SetField(mcptoken.FieldEnabled, field.TypeBool, value)
@@ -288,6 +327,34 @@ func (_u *MCPTokenUpdateOne) SetPrefix(v string) *MCPTokenUpdateOne {
 func (_u *MCPTokenUpdateOne) SetNillablePrefix(v *string) *MCPTokenUpdateOne {
 	if v != nil {
 		_u.SetPrefix(*v)
+	}
+	return _u
+}
+
+// SetOwnerUserID sets the "owner_user_id" field.
+func (_u *MCPTokenUpdateOne) SetOwnerUserID(v string) *MCPTokenUpdateOne {
+	_u.mutation.SetOwnerUserID(v)
+	return _u
+}
+
+// SetNillableOwnerUserID sets the "owner_user_id" field if the given value is not nil.
+func (_u *MCPTokenUpdateOne) SetNillableOwnerUserID(v *string) *MCPTokenUpdateOne {
+	if v != nil {
+		_u.SetOwnerUserID(*v)
+	}
+	return _u
+}
+
+// SetOwnerIsAdmin sets the "owner_is_admin" field.
+func (_u *MCPTokenUpdateOne) SetOwnerIsAdmin(v bool) *MCPTokenUpdateOne {
+	_u.mutation.SetOwnerIsAdmin(v)
+	return _u
+}
+
+// SetNillableOwnerIsAdmin sets the "owner_is_admin" field if the given value is not nil.
+func (_u *MCPTokenUpdateOne) SetNillableOwnerIsAdmin(v *bool) *MCPTokenUpdateOne {
+	if v != nil {
+		_u.SetOwnerIsAdmin(*v)
 	}
 	return _u
 }
@@ -423,6 +490,11 @@ func (_u *MCPTokenUpdateOne) check() error {
 			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "MCPToken.prefix": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.OwnerUserID(); ok {
+		if err := mcptoken.OwnerUserIDValidator(v); err != nil {
+			return &ValidationError{Name: "owner_user_id", err: fmt.Errorf(`ent: validator failed for field "MCPToken.owner_user_id": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -463,6 +535,12 @@ func (_u *MCPTokenUpdateOne) sqlSave(ctx context.Context) (_node *MCPToken, err 
 	}
 	if value, ok := _u.mutation.Prefix(); ok {
 		_spec.SetField(mcptoken.FieldPrefix, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.OwnerUserID(); ok {
+		_spec.SetField(mcptoken.FieldOwnerUserID, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.OwnerIsAdmin(); ok {
+		_spec.SetField(mcptoken.FieldOwnerIsAdmin, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.Enabled(); ok {
 		_spec.SetField(mcptoken.FieldEnabled, field.TypeBool, value)

@@ -104,6 +104,20 @@ func (_u *UpstreamProviderUpdate) SetNillableAppID(v *string) *UpstreamProviderU
 	return _u
 }
 
+// SetOwnerUserID sets the "owner_user_id" field.
+func (_u *UpstreamProviderUpdate) SetOwnerUserID(v string) *UpstreamProviderUpdate {
+	_u.mutation.SetOwnerUserID(v)
+	return _u
+}
+
+// SetNillableOwnerUserID sets the "owner_user_id" field if the given value is not nil.
+func (_u *UpstreamProviderUpdate) SetNillableOwnerUserID(v *string) *UpstreamProviderUpdate {
+	if v != nil {
+		_u.SetOwnerUserID(*v)
+	}
+	return _u
+}
+
 // SetDeployID sets the "deploy_id" field.
 func (_u *UpstreamProviderUpdate) SetDeployID(v string) *UpstreamProviderUpdate {
 	_u.mutation.SetDeployID(v)
@@ -334,6 +348,11 @@ func (_u *UpstreamProviderUpdate) check() error {
 			return &ValidationError{Name: "app_id", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.app_id": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.OwnerUserID(); ok {
+		if err := upstreamprovider.OwnerUserIDValidator(v); err != nil {
+			return &ValidationError{Name: "owner_user_id", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.owner_user_id": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.DeployID(); ok {
 		if err := upstreamprovider.DeployIDValidator(v); err != nil {
 			return &ValidationError{Name: "deploy_id", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.deploy_id": %w`, err)}
@@ -396,6 +415,9 @@ func (_u *UpstreamProviderUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if value, ok := _u.mutation.AppID(); ok {
 		_spec.SetField(upstreamprovider.FieldAppID, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.OwnerUserID(); ok {
+		_spec.SetField(upstreamprovider.FieldOwnerUserID, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.DeployID(); ok {
 		_spec.SetField(upstreamprovider.FieldDeployID, field.TypeString, value)
@@ -534,6 +556,20 @@ func (_u *UpstreamProviderUpdateOne) SetAppID(v string) *UpstreamProviderUpdateO
 func (_u *UpstreamProviderUpdateOne) SetNillableAppID(v *string) *UpstreamProviderUpdateOne {
 	if v != nil {
 		_u.SetAppID(*v)
+	}
+	return _u
+}
+
+// SetOwnerUserID sets the "owner_user_id" field.
+func (_u *UpstreamProviderUpdateOne) SetOwnerUserID(v string) *UpstreamProviderUpdateOne {
+	_u.mutation.SetOwnerUserID(v)
+	return _u
+}
+
+// SetNillableOwnerUserID sets the "owner_user_id" field if the given value is not nil.
+func (_u *UpstreamProviderUpdateOne) SetNillableOwnerUserID(v *string) *UpstreamProviderUpdateOne {
+	if v != nil {
+		_u.SetOwnerUserID(*v)
 	}
 	return _u
 }
@@ -781,6 +817,11 @@ func (_u *UpstreamProviderUpdateOne) check() error {
 			return &ValidationError{Name: "app_id", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.app_id": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.OwnerUserID(); ok {
+		if err := upstreamprovider.OwnerUserIDValidator(v); err != nil {
+			return &ValidationError{Name: "owner_user_id", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.owner_user_id": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.DeployID(); ok {
 		if err := upstreamprovider.DeployIDValidator(v); err != nil {
 			return &ValidationError{Name: "deploy_id", err: fmt.Errorf(`ent: validator failed for field "UpstreamProvider.deploy_id": %w`, err)}
@@ -860,6 +901,9 @@ func (_u *UpstreamProviderUpdateOne) sqlSave(ctx context.Context) (_node *Upstre
 	}
 	if value, ok := _u.mutation.AppID(); ok {
 		_spec.SetField(upstreamprovider.FieldAppID, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.OwnerUserID(); ok {
+		_spec.SetField(upstreamprovider.FieldOwnerUserID, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.DeployID(); ok {
 		_spec.SetField(upstreamprovider.FieldDeployID, field.TypeString, value)

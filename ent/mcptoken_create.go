@@ -38,6 +38,34 @@ func (_c *MCPTokenCreate) SetPrefix(v string) *MCPTokenCreate {
 	return _c
 }
 
+// SetOwnerUserID sets the "owner_user_id" field.
+func (_c *MCPTokenCreate) SetOwnerUserID(v string) *MCPTokenCreate {
+	_c.mutation.SetOwnerUserID(v)
+	return _c
+}
+
+// SetNillableOwnerUserID sets the "owner_user_id" field if the given value is not nil.
+func (_c *MCPTokenCreate) SetNillableOwnerUserID(v *string) *MCPTokenCreate {
+	if v != nil {
+		_c.SetOwnerUserID(*v)
+	}
+	return _c
+}
+
+// SetOwnerIsAdmin sets the "owner_is_admin" field.
+func (_c *MCPTokenCreate) SetOwnerIsAdmin(v bool) *MCPTokenCreate {
+	_c.mutation.SetOwnerIsAdmin(v)
+	return _c
+}
+
+// SetNillableOwnerIsAdmin sets the "owner_is_admin" field if the given value is not nil.
+func (_c *MCPTokenCreate) SetNillableOwnerIsAdmin(v *bool) *MCPTokenCreate {
+	if v != nil {
+		_c.SetOwnerIsAdmin(*v)
+	}
+	return _c
+}
+
 // SetEnabled sets the "enabled" field.
 func (_c *MCPTokenCreate) SetEnabled(v bool) *MCPTokenCreate {
 	_c.mutation.SetEnabled(v)
@@ -143,6 +171,14 @@ func (_c *MCPTokenCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *MCPTokenCreate) defaults() {
+	if _, ok := _c.mutation.OwnerUserID(); !ok {
+		v := mcptoken.DefaultOwnerUserID
+		_c.mutation.SetOwnerUserID(v)
+	}
+	if _, ok := _c.mutation.OwnerIsAdmin(); !ok {
+		v := mcptoken.DefaultOwnerIsAdmin
+		_c.mutation.SetOwnerIsAdmin(v)
+	}
 	if _, ok := _c.mutation.Enabled(); !ok {
 		v := mcptoken.DefaultEnabled
 		_c.mutation.SetEnabled(v)
@@ -182,6 +218,17 @@ func (_c *MCPTokenCreate) check() error {
 		if err := mcptoken.PrefixValidator(v); err != nil {
 			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "MCPToken.prefix": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.OwnerUserID(); !ok {
+		return &ValidationError{Name: "owner_user_id", err: errors.New(`ent: missing required field "MCPToken.owner_user_id"`)}
+	}
+	if v, ok := _c.mutation.OwnerUserID(); ok {
+		if err := mcptoken.OwnerUserIDValidator(v); err != nil {
+			return &ValidationError{Name: "owner_user_id", err: fmt.Errorf(`ent: validator failed for field "MCPToken.owner_user_id": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.OwnerIsAdmin(); !ok {
+		return &ValidationError{Name: "owner_is_admin", err: errors.New(`ent: missing required field "MCPToken.owner_is_admin"`)}
 	}
 	if _, ok := _c.mutation.Enabled(); !ok {
 		return &ValidationError{Name: "enabled", err: errors.New(`ent: missing required field "MCPToken.enabled"`)}
@@ -229,6 +276,14 @@ func (_c *MCPTokenCreate) createSpec() (*MCPToken, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Prefix(); ok {
 		_spec.SetField(mcptoken.FieldPrefix, field.TypeString, value)
 		_node.Prefix = value
+	}
+	if value, ok := _c.mutation.OwnerUserID(); ok {
+		_spec.SetField(mcptoken.FieldOwnerUserID, field.TypeString, value)
+		_node.OwnerUserID = value
+	}
+	if value, ok := _c.mutation.OwnerIsAdmin(); ok {
+		_spec.SetField(mcptoken.FieldOwnerIsAdmin, field.TypeBool, value)
+		_node.OwnerIsAdmin = value
 	}
 	if value, ok := _c.mutation.Enabled(); ok {
 		_spec.SetField(mcptoken.FieldEnabled, field.TypeBool, value)

@@ -79,8 +79,8 @@ func New(ctx context.Context, cfg Config, logger *zlog.Logger) (*App, error) {
 	app.upstreamToolRefs = make(map[string]upstreamToolRef)
 	app.upstreamHealthySlugs = make(map[string]bool)
 	app.upstreamFailureReasons = make(map[string]string)
-	app.mcpHTTP = mcpserver.NewStreamableHTTPServer(mcpServer)
-	app.mcpSSE = mcpserver.NewSSEServer(mcpServer)
+	app.mcpHTTP = mcpserver.NewStreamableHTTPServer(mcpServer, mcpserver.WithHTTPContextFunc(app.contextWithLazycatRole))
+	app.mcpSSE = mcpserver.NewSSEServer(mcpServer, mcpserver.WithSSEContextFunc(app.contextWithLazycatRole))
 	app.ui = web.Console()
 	app.providerProxy = app.withMCPProxyLogging(proxy.New(providers, tickets))
 	app.startMCPLogCleanup(ctx)
@@ -184,12 +184,14 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (a *App) requireMCPToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := tokenFromRequest(r)
-		if err := a.tokens.Validate(r.Context(), token); err != nil {
+		tokenDTO, err := a.tokens.Validate(r.Context(), token)
+		if err != nil {
 			w.Header().Set("WWW-Authenticate", `Bearer realm="lazycat-mcp"`)
 			writeAPIError(w, http.StatusUnauthorized, err.Error())
 			return
 		}
-		next.ServeHTTP(w, r)
+		tokenDTO.OwnerIsAdmin = a.lazycatUserIsAdmin(r.Context(), tokenDTO.OwnerUserID)
+		next.ServeHTTP(w, r.WithContext(contextWithMCPToken(r.Context(), tokenDTO)))
 	})
 }
 
