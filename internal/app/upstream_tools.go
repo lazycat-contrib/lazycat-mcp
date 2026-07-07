@@ -84,11 +84,62 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 	for _, provider := range providers {
 		activeSlugs[provider.Slug] = true
 		providerViews = append(providerViews, &ProviderDTOView{Slug: provider.Slug, AppID: provider.AppID, ResourceID: derefString(provider.ResourceID)})
+
+		// Self-app: always healthy.
+		if provider.AppID == selfPackageID {
+			successSlugs[provider.Slug] = true
+			delete(a.upstreamFailureReasons, provider.Slug)
+			continue
+		}
+
+		// Skill-only: marked healthy by resource scanner.
 		if skillOnlySlugs[provider.Slug] {
 			successSlugs[provider.Slug] = true
 			delete(a.upstreamFailureReasons, provider.Slug)
 			continue
 		}
+
+		// Lazycat app providers: probe for tools but never fail health.
+		if provider.ProviderType == upstreamprovider.ProviderTypeLazycat {
+			successSlugs[provider.Slug] = true
+			delete(a.upstreamFailureReasons, provider.Slug)
+			if provider.Transport == upstreamprovider.TransportStreamableHTTP {
+				perProviderCtx, perProviderCancel := context.WithTimeout(ctx, upstreamToolRefreshPerProviderTimeout)
+				tools, err := a.listUpstreamTools(perProviderCtx, provider)
+				perProviderCancel()
+				if err != nil {
+					if a.logger != nil {
+						a.logger.Debug().Err(err).Str("provider", provider.Slug).Msg("lazycat tool probe skipped (non-critical)")
+					}
+					continue
+				}
+				for _, tool := range tools {
+					if strings.TrimSpace(tool.Name) == "" {
+						continue
+					}
+					ref := upstreamToolRef{
+						AggregateName: uniqueAggregateToolName(provider.Slug, tool.Name, usedNames),
+						ProviderSlug:  provider.Slug,
+						ProviderName:  provider.Name,
+						UpstreamName:  tool.Name,
+					}
+					tool.Name = ref.AggregateName
+					tool.Description = aggregateToolDescription(provider, ref.UpstreamName, tool.Description)
+					toolCopy := tool
+					refCopy := ref
+					added = append(added, mcpserver.ServerTool{
+						Tool: toolCopy,
+						Handler: func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+							return a.callUpstreamTool(ctx, refCopy, request)
+						},
+					})
+					newRefsByName[ref.AggregateName] = ref
+				}
+			}
+			continue
+		}
+
+		// Custom providers: probe MCP endpoint.
 		if provider.Transport != upstreamprovider.TransportStreamableHTTP {
 			successSlugs[provider.Slug] = true
 			delete(a.upstreamFailureReasons, provider.Slug)

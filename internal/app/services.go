@@ -224,9 +224,10 @@ type ProviderDTO struct {
 	SkillTitle     string     `json:"skill_title,omitempty"`
 	SkillSummary   string     `json:"skill_summary,omitempty"`
 	SkillPrompts   []string   `json:"skill_prompts,omitempty"`
-	LastUsedAt     *time.Time `json:"last_used_at,omitempty"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
+	LastUsedAt       *time.Time `json:"last_used_at,omitempty"`
+	CreatedAt        time.Time  `json:"created_at"`
+	UpdatedAt        time.Time  `json:"updated_at"`
+	UpstreamToolNames []string   `json:"upstream_tool_names,omitempty"`
 }
 
 type PublicProviderDTO struct {

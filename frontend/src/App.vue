@@ -47,6 +47,11 @@ const tokenSecrets = ref({})
 const showPublishDialog = ref(false)
 const showDetailDialog = ref(false)
 const showDeleteDialog = ref(false)
+const selectedBatchKeys = ref(new Set())
+const batchSelectAll = ref(false)
+const batchAction = ref('')
+const batchConfirmDialog = ref(false)
+const batchTransport = ref('streamable_http')
 const deleteDialog = reactive({
   title: '',
   message: '',
@@ -244,7 +249,10 @@ function providerHealthMeta(provider) {
 
 function upstreamStatusMeta(row) {
   if (!row.provider) return { tone: 'warn', text: t('待发布', 'Pending') }
-  return row.provider.enabled ? { tone: 'ok', text: t('已上线', 'Live') } : { tone: 'soft', text: t('已下线', 'Offline') }
+  if (!row.provider.enabled) return { tone: 'soft', text: t('已下线', 'Offline') }
+  const health = providerHealthMeta(row.provider)
+  if (health.tone === 'danger') return { tone: 'danger', text: t('异常', 'Issue') }
+  return { tone: 'ok', text: t('已上线', 'Live') }
 }
 function normalizeDomain(value) {
   if (!value) return ''
@@ -264,6 +272,21 @@ function rootDomainFromHost(host) {
   if (parts.length < 2) return ''
   if (parts.length >= 4) return parts.slice(1).join('.')
   return normalized
+}
+const TOOL_TAG_TONES = ['ok','info','warn','soft','ok','info','warn','soft']
+function toolNameToLabel(name) {
+  // friendly short label from tool name
+  const parts = name.replace(/_/g,' ').split(' ')
+  const meaningful = parts.filter(p => !['lazycat','mcp','get','list','query','set','create','delete','update'].includes(p.toLowerCase()))
+  return meaningful.slice(0, 2).join(' ') || name.replace('lazycat_','').substring(0, 18)
+}
+function providerToolTags(row) {
+  const names = row.provider?.upstream_tool_names
+  if (!names || !names.length) return []
+  return names.map((name, i) => ({
+    label: toolNameToLabel(name),
+    tone: TOOL_TAG_TONES[i % TOOL_TAG_TONES.length]
+  }))
 }
 function openTargetPrefix(row) {
   const subdomain = normalizeDomain(row?.app?.subdomain)
@@ -592,6 +615,68 @@ async function clearLogs() {
   askClearLogs()
 }
 
+// ── Batch operations ──
+function toggleBatchRow(key) {
+  const next = new Set(selectedBatchKeys.value)
+  if (next.has(key)) {
+    next.delete(key)
+  } else {
+    next.add(key)
+  }
+  selectedBatchKeys.value = next
+  batchSelectAll.value = false
+}
+function toggleBatchSelectAll() {
+  if (batchSelectAll.value) {
+    selectedBatchKeys.value = new Set()
+    batchSelectAll.value = false
+  } else {
+    const ids = filteredUpstreamRows.value
+      .filter((row) => row.provider?.id)
+      .map((row) => row.key)
+    selectedBatchKeys.value = new Set(ids)
+    batchSelectAll.value = true
+  }
+}
+function selectedProviderIDs() {
+  const keys = selectedBatchKeys.value
+  return filteredUpstreamRows.value
+    .filter((row) => keys.has(row.key) && row.provider?.id)
+    .map((row) => row.provider.id)
+}
+async function executeBatchAction(action) {
+  const ids = selectedProviderIDs()
+  if (!ids.length) return
+  const body = { ids, action }
+  if (action === 'update_transport') body.transport = batchTransport.value
+  const data = await api('/api/providers/batch', { method: 'POST', body: JSON.stringify(body) })
+  const failed = (data.results || []).filter((r) => r.status === 'error')
+  if (failed.length) {
+    showToast(t(`批量${action}完成：${ids.length - failed.length} 成功 / ${failed.length} 失败`, `${action}: ${ids.length - failed.length} ok / ${failed.length} failed`))
+  } else {
+    showToast(t(`批量${action}完成：${ids.length} 条`, `${action}: ${ids.length} processed`))
+  }
+  selectedBatchKeys.value = new Set()
+  batchSelectAll.value = false
+  batchAction.value = ''
+  await loadAll()
+}
+function openBatchConfirm(action) {
+  batchAction.value = action
+  batchConfirmDialog.value = true
+}
+async function confirmBatch() {
+  const action = batchAction.value
+  batchConfirmDialog.value = false
+  if (!action) return
+  await executeBatchAction(action).catch((error) => showToast(error.message))
+}
+function cancelBatch() {
+  batchConfirmDialog.value = false
+  batchAction.value = ''
+  batchTransport.value = 'streamable_http'
+}
+
 onMounted(async () => {
   loadTokenSecrets()
   setActiveView(initialView(), false)
@@ -729,11 +814,24 @@ onBeforeUnmount(() => {
           <button type="button" class="ghost compact" @click="loadAll().catch((error) => showToast(error.message))">{{ t('刷新', 'Refresh') }}</button>
         </div>
 
+        <div v-if="selectedBatchKeys.size" class="batch-toolbar">
+          <span class="batch-info">{{ t(`已选 ${selectedBatchKeys.size} 条`, `${selectedBatchKeys.size} selected`) }}</span>
+          <button type="button" class="row-btn row-btn-publish" @click="openBatchConfirm('enable')">{{ t('批量上线', 'Enable all') }}</button>
+          <button type="button" class="row-btn row-btn-toggle" @click="openBatchConfirm('disable')">{{ t('批量下线', 'Disable all') }}</button>
+          <button type="button" class="row-btn row-btn-toggle" @click="openBatchConfirm('update_transport')">{{ t('批量更新传输', 'Update transport') }}</button>
+          <button type="button" class="row-btn row-btn-delete" @click="openBatchConfirm('delete')">{{ t('批量删除', 'Delete all') }}</button>
+          <button type="button" class="ghost compact" @click="selectedBatchKeys = new Set(); batchSelectAll = false">{{ t('取消选择', 'Clear') }}</button>
+        </div>
+
         <div class="upstream-list">
           <div class="upstream-list-head">
+            <span class="col-check"><input type="checkbox" :checked="batchSelectAll" @change="toggleBatchSelectAll" /></span>
             <span>{{ t('应用', 'App') }}</span>
             <span>{{ t('资源', 'Resource') }}</span>
+            <span>{{ t('传输方式', 'Transport') }}</span>
             <span>{{ t('入口', 'Route') }}</span>
+            <span>{{ t('类型', 'Type') }}</span>
+            <span>{{ t('功能', 'Features') }}</span>
             <span>{{ t('状态', 'Status') }}</span>
             <span>{{ t('操作', 'Actions') }}</span>
           </div>
@@ -741,17 +839,34 @@ onBeforeUnmount(() => {
           <div v-if="!pagedUpstreamRows.length" class="empty-compact muted">{{ t('暂无数据', 'No items') }}</div>
 
           <div v-for="row in pagedUpstreamRows" :key="row.key" class="upstream-row">
+            <div class="col-check">
+              <input v-if="row.provider?.id" type="checkbox" :checked="selectedBatchKeys.has(row.key)" @change="toggleBatchRow(row.key)" />
+            </div>
             <div>
               <strong>{{ row.title }}</strong>
               <div class="mono muted">{{ row.appId }}</div>
             </div>
             <div class="mono">{{ row.resourceId }}</div>
+            <div class="mono">{{ (row.provider?.transport || row.app?.default_transport || 'streamable_http').replace('streamable_http','Streamable HTTP').replace('sse','SSE') }}</div>
             <div class="mono">{{ row.endpoint }}</div>
-            <span class="pill" :class="upstreamStatusMeta(row).tone">{{ upstreamStatusMeta(row).text }}</span>
+            <span class="pill" :class="row.provider?.app_id === 'cloud.lazycat.app.czyt.lazycat-mcp' ? 'info' : (row.kind === 'custom' ? 'soft' : 'ok')">{{ row.provider?.app_id === 'cloud.lazycat.app.czyt.lazycat-mcp' ? t('内置','Built-in') : (row.kind === 'custom' ? t('自定义','Custom') : t('懒猫应用','LazyCat')) }}</span>
+            <div class="tag-row">
+              <template v-if="providerToolTags(row).length">
+                <span v-for="tag in providerToolTags(row).slice(0,3)" :key="tag.label" class="pill" :class="tag.tone" style="font-size:10px;padding:0 5px">{{ tag.label }}</span>
+                <span v-if="providerToolTags(row).length > 3" class="pill soft tooltip-host" style="font-size:10px;padding:0 5px;cursor:default">
+                  +{{ providerToolTags(row).length - 3 }}
+                  <span class="tooltip-popup">
+                    <span v-for="tag in providerToolTags(row).slice(3)" :key="tag.label" class="pill" :class="tag.tone" style="font-size:10px;padding:0 4px;margin:1px">{{ tag.label }}</span>
+                  </span>
+                </span>
+              </template>
+              <span v-if="!providerToolTags(row).length" class="muted" style="font-size:10px">-</span>
+            </div>
+            <span class="pill" :class="upstreamStatusMeta(row).tone" :title="(row.provider?.aggregate_error && row.provider?.enabled) ? row.provider.aggregate_error : ''">{{ upstreamStatusMeta(row).text }}</span>
             <div class="row-actions">
               <button v-if="!row.provider && row.kind === 'app'" type="button" class="row-btn row-btn-publish" @click="openPublishDialog(row)">{{ t('发布', 'Publish') }}</button>
               <button v-if="row.provider?.enabled" type="button" class="row-btn row-btn-toggle" @click="setProviderEnabled(row.provider, false).catch((error) => showToast(error.message))">{{ t('下线', 'Offline') }}</button>
-              <button v-if="row.provider && !row.provider.enabled && row.kind === 'app'" type="button" class="row-btn row-btn-publish" @click="openPublishDialog(row)">{{ t('重新发布', 'Republish') }}</button>
+              <button v-if="row.provider && !row.provider.enabled" type="button" class="row-btn row-btn-toggle" @click="setProviderEnabled(row.provider, true).catch((error) => showToast(error.message))">{{ t('启用', 'Enable') }}</button>
               <button v-if="row.provider" type="button" class="row-btn row-btn-delete" @click="askDeleteProvider(row.provider)">{{ t('删除', 'Delete') }}</button>
               <button v-if="canOpenRow(row)" type="button" class="row-btn row-btn-open" @click="openApp(row)">{{ t('打开', 'Open') }}</button>
               <button type="button" class="row-btn row-btn-detail" @click="viewUpstreamDetail(row)">{{ t('详情', 'Detail') }}</button>
@@ -953,6 +1068,12 @@ onBeforeUnmount(() => {
         <div class="detail-item"><span class="muted">{{ t('资源ID', 'Resource ID') }}</span><code class="mono">{{ detailRow.resourceId }}</code></div>
         <div class="detail-item span-2"><span class="muted">{{ t('入口路径', 'Route') }}</span><code class="mono">{{ detailRow.endpoint }}</code></div>
         <div v-if="detailRow.provider" class="detail-item span-2"><span class="muted">{{ t('Provider ID', 'Provider ID') }}</span><code class="mono">{{ detailRow.provider.id }}</code></div>
+        <div v-if="providerToolTags(detailRow).length" class="detail-item span-2">
+          <span class="muted">{{ t('上游工具', 'Upstream tools') }}</span>
+          <div class="tag-row" style="margin-top:6px">
+            <span v-for="tag in providerToolTags(detailRow)" :key="tag.label" class="pill" :class="tag.tone">{{ tag.label }}</span>
+          </div>
+        </div>
       </div>
       <div class="actions modal-actions">
         <button type="button" class="primary" @click="showDetailDialog = false">{{ t('确定', 'OK') }}</button>
@@ -978,6 +1099,32 @@ onBeforeUnmount(() => {
         <div class="actions modal-actions">
           <button type="button" class="ghost compact" @click="cancelDeleteProvider">{{ t('取消', 'Cancel') }}</button>
           <button type="button" class="danger" @click="confirmDeleteProvider().catch((error) => showToast(error.message))">{{ deleteDialog.confirmText || t('确定删除', 'Delete') }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Batch Confirm Dialog ── -->
+  <div v-if="batchConfirmDialog" class="modal-shell" @click.self="cancelBatch">
+    <div class="modal-card delete-modal">
+      <div class="modal-head">
+        <h3>{{ t('确认批量操作', 'Confirm batch action') }}</h3>
+        <button type="button" class="ghost compact" @click="cancelBatch">{{ t('关闭', 'Close') }}</button>
+      </div>
+      <div class="modal-body">
+        <p class="delete-modal-message">{{ t(`确认对 ${selectedBatchKeys.size} 条资源执行批量${batchAction}？`, `Confirm ${batchAction} on ${selectedBatchKeys.size} items?`) }}</p>
+        <div v-if="batchAction === 'update_transport'" class="batch-transport-select">
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-secondary);margin-bottom:12px">
+            {{ t('传输方式', 'Transport') }}
+            <select v-model="batchTransport" style="padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text)">
+              <option value="streamable_http">Streamable HTTP</option>
+              <option value="sse">SSE</option>
+            </select>
+          </label>
+        </div>
+        <div class="actions modal-actions">
+          <button type="button" class="ghost compact" @click="cancelBatch">{{ t('取消', 'Cancel') }}</button>
+          <button type="button" class="danger" @click="confirmBatch().catch((error) => showToast(error.message))">{{ t('确认', 'Confirm') }}</button>
         </div>
       </div>
     </div>
