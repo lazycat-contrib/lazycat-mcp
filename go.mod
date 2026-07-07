@@ -8,7 +8,7 @@ require (
 	github.com/lib-x/entsqlite v0.2.3
 	github.com/likexian/whois v1.15.7
 	github.com/mark3labs/mcp-go v0.55.1
-	github.com/rs/zerolog v1.34.0
+	github.com/rs/zerolog v1.35.1
 	google.golang.org/grpc v1.82.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
