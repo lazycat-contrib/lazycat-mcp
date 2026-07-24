@@ -1,0 +1,7 @@
+{
+  "name": "lazycat-mcp-workspace",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ]
+}

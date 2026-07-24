@@ -13,9 +13,9 @@ BUILD_TIME=${BUILD_TIME:-$(date -u '+%Y-%m-%dT%H:%M:%SZ')}
 LDFLAGS="-s -w -X lazycat-mcp/internal/buildinfo.Version=${VERSION} -X lazycat-mcp/internal/buildinfo.Commit=${COMMIT} -X lazycat-mcp/internal/buildinfo.BuildTime=${BUILD_TIME}"
 
 echo "install frontend deps"
-( cd frontend && npm install --include=dev )
+npm ci --include=dev
 echo "build frontend"
-( cd frontend && npm run build )
+npm run build --workspace frontend
 echo "prepare go mod"
 "$GO_BIN" mod tidy && "$GO_BIN" mod download
 echo "generating ent"
