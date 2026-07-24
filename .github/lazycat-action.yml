@@ -1,0 +1,32 @@
+version: 1
+
+project:
+  root: .
+  build_config: lzc-build.yml
+  package_file: package.yml
+  output: .lazycat-build/lazycat-mcp.lpk
+  target_arch: amd64
+
+update:
+  strategy: publish
+  allow_downgrade: false
+  version_source:
+    type: git
+
+build:
+  toolchains:
+    - kind: go
+      version: 1.25.x
+    - kind: node
+      version: 24.x
+  run_buildscript: true
+
+stores:
+  official:
+    enabled: false
+    skip_if_version_exists: false
+  private:
+    enabled: true
+    skip_if_version_exists: true
+    name: 懒猫MCP
+    summary: Published from GitHub Actions

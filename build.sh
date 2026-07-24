@@ -2,6 +2,8 @@
 set -e
 
 GO_BIN=${GO_BIN:-go}
+TARGET_OS=${LAZYCAT_TARGET_OS:-linux}
+TARGET_ARCH=${LAZYCAT_TARGET_ARCH:-amd64}
 
 VERSION=${VERSION:-$(awk '/^version:/ {print $2; exit}' package.yml | tr -d '"')}
 VERSION=${VERSION:-dev}
@@ -19,7 +21,7 @@ echo "prepare go mod"
 echo "generating ent"
 "$GO_BIN" generate ./ent
 echo "building dist ${VERSION} (${COMMIT})"
-GOOS=linux GOARCH=amd64 "$GO_BIN" build -ldflags "$LDFLAGS" -o dist/lazycat-mcp ./cmd/mcp
+GOOS="$TARGET_OS" GOARCH="$TARGET_ARCH" "$GO_BIN" build -ldflags "$LDFLAGS" -o dist/lazycat-mcp ./cmd/mcp
 echo "copy resources"
 rm -rf dist/resources
 mkdir -p dist/resources
