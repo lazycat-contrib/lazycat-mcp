@@ -34,17 +34,22 @@ type App struct {
 	resources *ResourceScanner
 	tickets   *TicketStore
 
-	mcpServer              *mcpserver.MCPServer
-	mcpHTTP                http.Handler
-	mcpSSE                 http.Handler
-	ui                     http.Handler
-	providerProxy          http.Handler
-	cleanupCancel          context.CancelFunc
-	upstreamToolMu         sync.RWMutex
-	upstreamToolRefs       map[string]upstreamToolRef
-	upstreamHealthySlugs   map[string]bool
-	upstreamFailureReasons map[string]string
-	refreshUpstreamRunning atomic.Bool
+	mcpServer               *mcpserver.MCPServer
+	mcpHTTP                 http.Handler
+	mcpSSE                  http.Handler
+	ui                      http.Handler
+	providerProxy           http.Handler
+	cleanupCancel           context.CancelFunc
+	providerReconcileCancel context.CancelFunc
+	upstreamRefreshMu       sync.Mutex
+	upstreamToolMu          sync.RWMutex
+	upstreamToolRefs        map[string]upstreamToolRef
+	upstreamHealthySlugs    map[string]bool
+	upstreamFailureReasons  map[string]string
+	missingProviderSince    map[int]time.Time
+	skillResourceMu         sync.Mutex
+	skillResourceURIs       map[string]bool
+	refreshUpstreamRunning  atomic.Bool
 }
 
 func New(ctx context.Context, cfg Config, logger *zlog.Logger) (*App, error) {
@@ -79,12 +84,15 @@ func New(ctx context.Context, cfg Config, logger *zlog.Logger) (*App, error) {
 	app.upstreamToolRefs = make(map[string]upstreamToolRef)
 	app.upstreamHealthySlugs = make(map[string]bool)
 	app.upstreamFailureReasons = make(map[string]string)
+	app.missingProviderSince = make(map[int]time.Time)
+	app.skillResourceURIs = make(map[string]bool)
 	app.mcpHTTP = mcpserver.NewStreamableHTTPServer(mcpServer, mcpserver.WithHTTPContextFunc(app.contextWithLazycatRole))
 	app.mcpSSE = mcpserver.NewSSEServer(mcpServer, mcpserver.WithSSEContextFunc(app.contextWithLazycatRole))
 	app.ui = web.Console()
 	app.providerProxy = app.withMCPProxyLogging(proxy.New(providers, tickets))
 	app.startMCPLogCleanup(ctx)
 	app.refreshUpstreamToolsAsync()
+	app.startProviderReconciliation()
 	app.registerSkillTools()
 	return app, nil
 }
@@ -148,6 +156,9 @@ func (a *App) captureTicket(r *http.Request) bool {
 func (a *App) Close() {
 	if a.cleanupCancel != nil {
 		a.cleanupCancel()
+	}
+	if a.providerReconcileCancel != nil {
+		a.providerReconcileCancel()
 	}
 	if a.gateway != nil {
 		_ = a.gateway.Close()

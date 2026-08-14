@@ -55,23 +55,69 @@ func (s *ResourceScanner) Scan(ctx context.Context) ResourceIndex {
 	for _, item := range scanSkillResources(ctx, filepath.Join(s.root, "skills")) {
 		index.SkillsByApp[item.AppID] = append(index.SkillsByApp[item.AppID], item)
 	}
-	for appID := range index.MCPByApp {
-		sort.Slice(index.MCPByApp[appID], func(i, j int) bool {
-			if index.MCPByApp[appID][i].ResourceID == "default" {
+	index.sort()
+	return index
+}
+
+func (s *ResourceScanner) ScanForReconcile(ctx context.Context) (ResourceIndex, error) {
+	index := ResourceIndex{
+		MCPByApp:    make(map[string][]MCPResource),
+		SkillsByApp: make(map[string][]SkillResource),
+	}
+	mcpResources, err := scanMCPResourcesStrict(ctx, filepath.Join(s.root, "mcp-providers"))
+	if err != nil {
+		return index, fmt.Errorf("scan mcp provider resources: %w", err)
+	}
+	for _, item := range mcpResources {
+		index.MCPByApp[item.AppID] = append(index.MCPByApp[item.AppID], item)
+	}
+	skillResources, err := scanSkillResourcesStrict(ctx, filepath.Join(s.root, "skills"))
+	if err != nil {
+		return ResourceIndex{
+			MCPByApp:    make(map[string][]MCPResource),
+			SkillsByApp: make(map[string][]SkillResource),
+		}, fmt.Errorf("scan skill resources: %w", err)
+	}
+	for _, item := range skillResources {
+		index.SkillsByApp[item.AppID] = append(index.SkillsByApp[item.AppID], item)
+	}
+	index.sort()
+	return index, nil
+}
+
+func (idx ResourceIndex) sort() {
+	for appID := range idx.MCPByApp {
+		sort.Slice(idx.MCPByApp[appID], func(i, j int) bool {
+			if idx.MCPByApp[appID][i].ResourceID == "default" {
 				return true
 			}
-			if index.MCPByApp[appID][j].ResourceID == "default" {
+			if idx.MCPByApp[appID][j].ResourceID == "default" {
 				return false
 			}
-			return index.MCPByApp[appID][i].ResourceID < index.MCPByApp[appID][j].ResourceID
+			return idx.MCPByApp[appID][i].ResourceID < idx.MCPByApp[appID][j].ResourceID
 		})
 	}
-	for appID := range index.SkillsByApp {
-		sort.Slice(index.SkillsByApp[appID], func(i, j int) bool {
-			return index.SkillsByApp[appID][i].ResourceID < index.SkillsByApp[appID][j].ResourceID
+	for appID := range idx.SkillsByApp {
+		sort.Slice(idx.SkillsByApp[appID], func(i, j int) bool {
+			return idx.SkillsByApp[appID][i].ResourceID < idx.SkillsByApp[appID][j].ResourceID
 		})
 	}
-	return index
+}
+
+func (idx ResourceIndex) HasProviderResource(appID, resourceID string) bool {
+	resourceID = strings.TrimSpace(resourceID)
+	for _, resource := range idx.MCPByApp[appID] {
+		if resourceID == "" || resource.ResourceID == resourceID {
+			return true
+		}
+	}
+	skills := idx.SkillsByApp[appID]
+	for _, resource := range skills {
+		if resourceID == "" || resource.ResourceID == resourceID {
+			return true
+		}
+	}
+	return resourceID != "" && len(idx.MCPByApp[appID]) == 0 && len(skills) == 1
 }
 
 func (idx ResourceIndex) AppIDs() []string {
@@ -144,6 +190,44 @@ func scanMCPResources(ctx context.Context, root string) []MCPResource {
 	return resources
 }
 
+func scanMCPResourcesStrict(ctx context.Context, root string) ([]MCPResource, error) {
+	appDirs, err := os.ReadDir(root)
+	if err != nil {
+		return nil, err
+	}
+	var resources []MCPResource
+	for _, appDir := range appDirs {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if !appDir.IsDir() || skipResourceDir(appDir.Name()) {
+			continue
+		}
+		providerRoot := filepath.Join(root, appDir.Name())
+		providerDirs, err := os.ReadDir(providerRoot)
+		if err != nil {
+			return nil, fmt.Errorf("read app %s: %w", appDir.Name(), err)
+		}
+		for _, providerDir := range providerDirs {
+			if !providerDir.IsDir() || skipResourceDir(providerDir.Name()) {
+				continue
+			}
+			filePath := filepath.Join(providerRoot, providerDir.Name(), "mcp.yml")
+			endpoint, err := readMCPEndpoint(filePath)
+			if err != nil {
+				return nil, fmt.Errorf("read %s/%s: %w", appDir.Name(), providerDir.Name(), err)
+			}
+			resources = append(resources, MCPResource{
+				AppID:      appDir.Name(),
+				ResourceID: providerDir.Name(),
+				Endpoint:   endpoint,
+				FilePath:   filePath,
+			})
+		}
+	}
+	return resources, nil
+}
+
 func readMCPEndpoint(filePath string) (string, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
@@ -206,6 +290,75 @@ func scanSkillResources(ctx context.Context, root string) []SkillResource {
 		}
 	}
 	return resources
+}
+
+func scanSkillResourcesStrict(ctx context.Context, root string) ([]SkillResource, error) {
+	appDirs, err := os.ReadDir(root)
+	if err != nil {
+		return nil, err
+	}
+	var resources []SkillResource
+	for _, appDir := range appDirs {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if !appDir.IsDir() || skipResourceDir(appDir.Name()) {
+			continue
+		}
+		appRoot := filepath.Join(root, appDir.Name())
+		directPath := filepath.Join(appRoot, "SKILL.md")
+		exists, err := regularFileExistsStrict(directPath)
+		if err != nil {
+			return nil, fmt.Errorf("inspect %s: %w", directPath, err)
+		}
+		if exists {
+			resources = append(resources, SkillResource{
+				AppID:      appDir.Name(),
+				ResourceID: appDir.Name(),
+				FilePath:   directPath,
+				PublicPath: fmt.Sprintf("/skills/%s/SKILL.md", appDir.Name()),
+			})
+			continue
+		}
+		skillDirs, err := os.ReadDir(appRoot)
+		if err != nil {
+			return nil, fmt.Errorf("read app %s: %w", appDir.Name(), err)
+		}
+		for _, skillDir := range skillDirs {
+			if !skillDir.IsDir() || skipResourceDir(skillDir.Name()) {
+				continue
+			}
+			filePath := filepath.Join(appRoot, skillDir.Name(), "SKILL.md")
+			exists, err := regularFileExistsStrict(filePath)
+			if err != nil {
+				return nil, fmt.Errorf("inspect %s: %w", filePath, err)
+			}
+			if !exists {
+				return nil, fmt.Errorf("missing SKILL.md for %s/%s", appDir.Name(), skillDir.Name())
+			}
+			resources = append(resources, SkillResource{
+				AppID:      appDir.Name(),
+				ResourceID: skillDir.Name(),
+				FilePath:   filePath,
+				PublicPath: fmt.Sprintf("/skills/%s/%s/SKILL.md", appDir.Name(), skillDir.Name()),
+			})
+		}
+	}
+	return resources, nil
+}
+
+func regularFileExistsStrict(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	if info.IsDir() {
+		return false, fmt.Errorf("expected regular file")
+	}
+	return true, nil
 }
 
 func skipResourceDir(name string) bool {
