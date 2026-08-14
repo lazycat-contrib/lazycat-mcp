@@ -688,24 +688,6 @@ func (a *App) validateProviderUpdateVisibleForRequest(r *http.Request, id int, i
 
 func boolPtr(v bool) *bool { return &v }
 
-func (a *App) cleanupOrphanProviders(ctx context.Context, installed map[string]*sys.AppInfo) {
-	providers, err := a.providers.List(ctx)
-	if err != nil {
-		return
-	}
-	for _, p := range providers {
-		if p.Type != "lazycat" || p.AppID == "" || p.AppID == selfPackageID {
-			continue
-		}
-		if _, ok := installed[p.AppID]; !ok {
-			if a.logger != nil {
-				a.logger.Info().Str("slug", p.Slug).Str("app_id", p.AppID).Msg("auto-cleaning orphan provider")
-			}
-			_ = a.providers.Delete(ctx, p.ID)
-		}
-	}
-}
-
 func (a *App) selfToolNamesForRequest(r *http.Request) []string {
 	return a.selfToolNames(a.isLazycatAdminRequest(r))
 }

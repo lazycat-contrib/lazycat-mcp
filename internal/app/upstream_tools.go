@@ -63,6 +63,11 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 	if a == nil || a.mcpServer == nil || a.providers == nil {
 		return nil
 	}
+	a.upstreamRefreshMu.Lock()
+	defer a.upstreamRefreshMu.Unlock()
+	if _, err := a.reconcileLazyCatProviders(ctx); err != nil && a.logger != nil {
+		a.logger.Warn().Err(err).Msg("skip stale provider cleanup")
+	}
 	providers, err := a.providers.Enabled(ctx)
 	if err != nil {
 		return err
@@ -78,7 +83,7 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 
 	activeSlugs := make(map[string]bool, len(providers))
 	successSlugs := make(map[string]bool, len(providers))
-	a.upstreamFailureReasons = make(map[string]string, len(providers))
+	failureReasons := make(map[string]string, len(providers))
 	providerViews := make([]*ProviderDTOView, 0, len(providers))
 	added := make([]mcpserver.ServerTool, 0)
 	newRefsByName := make(map[string]upstreamToolRef)
@@ -93,21 +98,21 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 		// Self-app: always healthy.
 		if provider.AppID == selfPackageID {
 			successSlugs[provider.Slug] = true
-			delete(a.upstreamFailureReasons, provider.Slug)
+			delete(failureReasons, provider.Slug)
 			continue
 		}
 
 		// Skill-only: marked healthy by resource scanner.
 		if skillOnlySlugs[provider.Slug] {
 			successSlugs[provider.Slug] = true
-			delete(a.upstreamFailureReasons, provider.Slug)
+			delete(failureReasons, provider.Slug)
 			continue
 		}
 
 		// Lazycat app providers: probe for tools but never fail health.
 		if provider.ProviderType == upstreamprovider.ProviderTypeLazycat {
 			successSlugs[provider.Slug] = true
-			delete(a.upstreamFailureReasons, provider.Slug)
+			delete(failureReasons, provider.Slug)
 			if provider.Transport == upstreamprovider.TransportStreamableHTTP || provider.Transport == upstreamprovider.TransportSse {
 				perProviderCtx, perProviderCancel := context.WithTimeout(ctx, upstreamToolRefreshPerProviderTimeout)
 				tools, err := a.listUpstreamTools(perProviderCtx, provider)
@@ -147,7 +152,7 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 		// Custom providers: probe MCP endpoint.
 		if provider.Transport != upstreamprovider.TransportStreamableHTTP && provider.Transport != upstreamprovider.TransportSse {
 			successSlugs[provider.Slug] = true
-			delete(a.upstreamFailureReasons, provider.Slug)
+			delete(failureReasons, provider.Slug)
 			continue
 		}
 		perProviderCtx, perProviderCancel := context.WithTimeout(ctx, upstreamToolRefreshPerProviderTimeout)
@@ -157,11 +162,11 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 			if a.logger != nil {
 				a.logger.Warn().Err(err).Str("provider", provider.Slug).Msg("list upstream mcp tools failed")
 			}
-			a.upstreamFailureReasons[provider.Slug] = err.Error()
+			failureReasons[provider.Slug] = err.Error()
 			continue
 		}
 		successSlugs[provider.Slug] = true
-		delete(a.upstreamFailureReasons, provider.Slug)
+		delete(failureReasons, provider.Slug)
 		for name, ref := range oldRefs {
 			if ref.ProviderSlug == provider.Slug {
 				delete(usedNames, name)
@@ -207,6 +212,11 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 		finalRefs[name] = ref
 	}
 
+	skillErrors := a.refreshSkillStates(ctx, providerViews)
+	for slug, reason := range skillErrors {
+		failureReasons[slug] = reason
+	}
+
 	a.upstreamToolMu.Lock()
 	a.upstreamToolRefs = finalRefs
 	a.upstreamHealthySlugs = make(map[string]bool, len(successSlugs))
@@ -215,12 +225,9 @@ func (a *App) refreshUpstreamTools(ctx context.Context) error {
 			a.upstreamHealthySlugs[slug] = true
 		}
 	}
+	a.upstreamFailureReasons = failureReasons
 	a.upstreamToolMu.Unlock()
 
-	skillErrors := a.refreshSkillStates(ctx, providerViews)
-	for slug, reason := range skillErrors {
-		a.upstreamFailureReasons[slug] = reason
-	}
 	a.registerSkillResources()
 
 	if len(removeNames) > 0 {
@@ -377,6 +384,8 @@ func (a *App) aggregatedSlugs() map[string]bool {
 }
 
 func (a *App) aggregateErrors() map[string]string {
+	a.upstreamToolMu.RLock()
+	defer a.upstreamToolMu.RUnlock()
 	out := make(map[string]string, len(a.upstreamFailureReasons))
 	for slug, reason := range a.upstreamFailureReasons {
 		out[slug] = reason

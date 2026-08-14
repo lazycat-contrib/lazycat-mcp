@@ -170,11 +170,34 @@ func parseSkillMarkdown(raw string) (title, summary string, prompts []string) {
 }
 
 func (a *App) registerSkillResources() {
+	if a == nil || a.mcpServer == nil {
+		return
+	}
 	skillStatesMu.RLock()
-	defer skillStatesMu.RUnlock()
-
+	contents := make([]SkillContent, 0, len(skillStatesMap))
 	for _, st := range skillStatesMap {
-		content := st.content
+		contents = append(contents, st.content)
+	}
+	skillStatesMu.RUnlock()
+
+	nextURIs := make(map[string]bool, len(contents))
+	for _, content := range contents {
+		nextURIs[content.ResourceURI] = true
+	}
+
+	a.skillResourceMu.Lock()
+	defer a.skillResourceMu.Unlock()
+	var removed []string
+	for uri := range a.skillResourceURIs {
+		if !nextURIs[uri] {
+			removed = append(removed, uri)
+		}
+	}
+	if len(removed) > 0 {
+		a.mcpServer.DeleteResources(removed...)
+	}
+	for _, content := range contents {
+		content := content
 		mcpResource := mcp.NewResource(
 			content.ResourceURI,
 			content.Title+" (Skill)",
@@ -191,6 +214,7 @@ func (a *App) registerSkillResources() {
 			}, nil
 		})
 	}
+	a.skillResourceURIs = nextURIs
 }
 
 func (a *App) skillPromptTool() mcpserver.ServerTool {

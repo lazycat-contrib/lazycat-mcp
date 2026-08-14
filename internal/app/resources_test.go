@@ -7,6 +7,32 @@ import (
 	"testing"
 )
 
+func TestResourceIndexHasProviderResourceFallsBackToSingleSkill(t *testing.T) {
+	index := ResourceIndex{
+		MCPByApp: map[string][]MCPResource{},
+		SkillsByApp: map[string][]SkillResource{
+			"anna-skill": {{AppID: "anna-skill", ResourceID: "wx-agent"}},
+		},
+	}
+	if !index.HasProviderResource("anna-skill", "default") {
+		t.Fatal("expected single Skill resource fallback")
+	}
+}
+
+func TestResourceIndexHasProviderResourceRejectsSkillFallbackWhenMCPResourcesRemain(t *testing.T) {
+	index := ResourceIndex{
+		MCPByApp: map[string][]MCPResource{
+			"anna-skill": {{AppID: "anna-skill", ResourceID: "other"}},
+		},
+		SkillsByApp: map[string][]SkillResource{
+			"anna-skill": {{AppID: "anna-skill", ResourceID: "wx-agent"}},
+		},
+	}
+	if index.HasProviderResource("anna-skill", "default") {
+		t.Fatal("expected unrelated Skill resource not to preserve missing MCP provider")
+	}
+}
+
 func TestResourceScannerScansNestedMCPProviders(t *testing.T) {
 	root := t.TempDir()
 	mcpDir := filepath.Join(root, "mcp-providers", "cloud.lazycat.app.photo", "default")

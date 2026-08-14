@@ -20,6 +20,8 @@ echo "prepare go mod"
 "$GO_BIN" mod tidy && "$GO_BIN" mod download
 echo "generating ent"
 "$GO_BIN" generate ./ent
+echo "normalize go mod"
+"$GO_BIN" mod tidy
 echo "building dist ${VERSION} (${COMMIT})"
 GOOS="$TARGET_OS" GOARCH="$TARGET_ARCH" "$GO_BIN" build -ldflags "$LDFLAGS" -o dist/lazycat-mcp ./cmd/mcp
 echo "copy resources"

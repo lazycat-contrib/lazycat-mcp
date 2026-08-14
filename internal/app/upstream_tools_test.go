@@ -179,6 +179,40 @@ func TestRefreshUpstreamToolsRemovesDisabledProviderTools(t *testing.T) {
 	}
 }
 
+func TestRegisterSkillResourcesRemovesStaleResources(t *testing.T) {
+	skillStatesMu.Lock()
+	originalSkillStates := skillStatesMap
+	skillStatesMap = map[string]*skillState{
+		"anna-skill": {content: SkillContent{
+			Title:       "Anna",
+			Summary:     "test skill",
+			RawMarkdown: "# Anna\n",
+			ResourceURI: "skills://anna-skill/SKILL.md",
+		}},
+	}
+	skillStatesMu.Unlock()
+	defer func() {
+		skillStatesMu.Lock()
+		skillStatesMap = originalSkillStates
+		skillStatesMu.Unlock()
+	}()
+
+	app := &App{skillResourceURIs: make(map[string]bool)}
+	app.mcpServer = app.newMCPServer()
+	app.registerSkillResources()
+	if _, ok := app.mcpServer.ListResources()["skills://anna-skill/SKILL.md"]; !ok {
+		t.Fatal("expected Skill resource to be registered")
+	}
+
+	skillStatesMu.Lock()
+	skillStatesMap = map[string]*skillState{}
+	skillStatesMu.Unlock()
+	app.registerSkillResources()
+	if _, ok := app.mcpServer.ListResources()["skills://anna-skill/SKILL.md"]; ok {
+		t.Fatal("expected stale Skill resource to be removed")
+	}
+}
+
 func TestSelectSkillResourceFallsBackToSingleSkillEvenWhenResourceIDDiffers(t *testing.T) {
 	resources := []SkillResource{{
 		AppID:      "cloud.lazycat.app.wx-data-helper-skill",
@@ -272,7 +306,6 @@ func TestRefreshUpstreamToolsLoadsSkillContentFromResourceScanner(t *testing.T) 
 		t.Fatalf("unexpected prompt text: %s", content.Text)
 	}
 }
-
 
 func TestRefreshUpstreamToolsSkillOnlyProviderDoesNotProbeMCPTransport(t *testing.T) {
 	ctx := context.Background()
