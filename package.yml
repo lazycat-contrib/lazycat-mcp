@@ -6,16 +6,13 @@ min_os_version: 1.6.0
 license: https://choosealicense.com/licenses/mit/
 homepage:
 author: czyt
-
 permissions:
   required:
     - lzcapp.user_delegate
     - user.notify
-
 import_resources:
   - kind: skills
   - kind: mcp-providers
-
 locales:
   zh:
     name: "懒猫MCP"
