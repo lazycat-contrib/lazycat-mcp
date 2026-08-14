@@ -2,6 +2,7 @@
 
 ## Unreleased
 - 自动对账已发布的 LazyCat Provider：当对应 MCP 或 Skill resource 连续缺失超过宽限期时，自动删除遗留 Provider 并刷新聚合工具；资源扫描异常时重置观察并跳过清理，避免误删。
+- 兼容 LazyCat 运行时为 imported resource 增加 exporter package 包装层的目录布局，避免严格扫描误报并阻断遗留 Provider 清理。
 
 ## 2026-06-24
 - 按资源发布工作台原型重构控制台信息架构：侧栏入口改成“总览 / 资源发布 / 访问凭据 / 调用观测”，并补充任务导向说明与导航 KPI。

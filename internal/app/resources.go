@@ -176,15 +176,37 @@ func scanMCPResources(ctx context.Context, root string) []MCPResource {
 			}
 			filePath := filepath.Join(providerRoot, providerDir.Name(), "mcp.yml")
 			endpoint, err := readMCPEndpoint(filePath)
+			if err == nil {
+				resources = append(resources, MCPResource{
+					AppID:      appDir.Name(),
+					ResourceID: providerDir.Name(),
+					Endpoint:   endpoint,
+					FilePath:   filePath,
+				})
+				continue
+			}
+
+			nestedRoot := filepath.Join(providerRoot, providerDir.Name())
+			nestedDirs, err := os.ReadDir(nestedRoot)
 			if err != nil {
 				continue
 			}
-			resources = append(resources, MCPResource{
-				AppID:      appDir.Name(),
-				ResourceID: providerDir.Name(),
-				Endpoint:   endpoint,
-				FilePath:   filePath,
-			})
+			for _, nestedDir := range nestedDirs {
+				if !nestedDir.IsDir() || skipResourceDir(nestedDir.Name()) {
+					continue
+				}
+				filePath := filepath.Join(nestedRoot, nestedDir.Name(), "mcp.yml")
+				endpoint, err := readMCPEndpoint(filePath)
+				if err != nil {
+					continue
+				}
+				resources = append(resources, MCPResource{
+					AppID:      providerDir.Name(),
+					ResourceID: nestedDir.Name(),
+					Endpoint:   endpoint,
+					FilePath:   filePath,
+				})
+			}
 		}
 	}
 	return resources
@@ -213,16 +235,57 @@ func scanMCPResourcesStrict(ctx context.Context, root string) ([]MCPResource, er
 				continue
 			}
 			filePath := filepath.Join(providerRoot, providerDir.Name(), "mcp.yml")
-			endpoint, err := readMCPEndpoint(filePath)
+			exists, err := regularFileExistsStrict(filePath)
 			if err != nil {
-				return nil, fmt.Errorf("read %s/%s: %w", appDir.Name(), providerDir.Name(), err)
+				return nil, fmt.Errorf("inspect %s/%s: %w", appDir.Name(), providerDir.Name(), err)
 			}
-			resources = append(resources, MCPResource{
-				AppID:      appDir.Name(),
-				ResourceID: providerDir.Name(),
-				Endpoint:   endpoint,
-				FilePath:   filePath,
-			})
+			if exists {
+				endpoint, err := readMCPEndpoint(filePath)
+				if err != nil {
+					return nil, fmt.Errorf("read %s/%s: %w", appDir.Name(), providerDir.Name(), err)
+				}
+				resources = append(resources, MCPResource{
+					AppID:      appDir.Name(),
+					ResourceID: providerDir.Name(),
+					Endpoint:   endpoint,
+					FilePath:   filePath,
+				})
+				continue
+			}
+
+			nestedRoot := filepath.Join(providerRoot, providerDir.Name())
+			nestedDirs, err := os.ReadDir(nestedRoot)
+			if err != nil {
+				return nil, fmt.Errorf("read app %s/%s: %w", appDir.Name(), providerDir.Name(), err)
+			}
+			found := false
+			for _, nestedDir := range nestedDirs {
+				if !nestedDir.IsDir() || skipResourceDir(nestedDir.Name()) {
+					continue
+				}
+				found = true
+				filePath := filepath.Join(nestedRoot, nestedDir.Name(), "mcp.yml")
+				exists, err := regularFileExistsStrict(filePath)
+				if err != nil {
+					return nil, fmt.Errorf("inspect %s/%s/%s: %w", appDir.Name(), providerDir.Name(), nestedDir.Name(), err)
+				}
+				if !exists {
+					return nil, fmt.Errorf("missing mcp.yml for %s/%s/%s", appDir.Name(), providerDir.Name(), nestedDir.Name())
+				}
+				endpoint, err := readMCPEndpoint(filePath)
+				if err != nil {
+					return nil, fmt.Errorf("read %s/%s/%s: %w", appDir.Name(), providerDir.Name(), nestedDir.Name(), err)
+				}
+				resources = append(resources, MCPResource{
+					AppID:      providerDir.Name(),
+					ResourceID: nestedDir.Name(),
+					Endpoint:   endpoint,
+					FilePath:   filePath,
+				})
+			}
+			if !found {
+				return nil, fmt.Errorf("missing mcp.yml for %s/%s", appDir.Name(), providerDir.Name())
+			}
 		}
 	}
 	return resources, nil
@@ -278,15 +341,36 @@ func scanSkillResources(ctx context.Context, root string) []SkillResource {
 				continue
 			}
 			filePath := filepath.Join(appRoot, skillDir.Name(), "SKILL.md")
-			if !fileExists(filePath) {
+			if fileExists(filePath) {
+				resources = append(resources, SkillResource{
+					AppID:      appDir.Name(),
+					ResourceID: skillDir.Name(),
+					FilePath:   filePath,
+					PublicPath: fmt.Sprintf("/skills/%s/%s/SKILL.md", appDir.Name(), skillDir.Name()),
+				})
 				continue
 			}
-			resources = append(resources, SkillResource{
-				AppID:      appDir.Name(),
-				ResourceID: skillDir.Name(),
-				FilePath:   filePath,
-				PublicPath: fmt.Sprintf("/skills/%s/%s/SKILL.md", appDir.Name(), skillDir.Name()),
-			})
+
+			nestedRoot := filepath.Join(appRoot, skillDir.Name())
+			nestedDirs, err := os.ReadDir(nestedRoot)
+			if err != nil {
+				continue
+			}
+			for _, nestedDir := range nestedDirs {
+				if !nestedDir.IsDir() || skipResourceDir(nestedDir.Name()) {
+					continue
+				}
+				filePath := filepath.Join(nestedRoot, nestedDir.Name(), "SKILL.md")
+				if !fileExists(filePath) {
+					continue
+				}
+				resources = append(resources, SkillResource{
+					AppID:      skillDir.Name(),
+					ResourceID: nestedDir.Name(),
+					FilePath:   filePath,
+					PublicPath: fmt.Sprintf("/skills/%s/%s/%s/SKILL.md", appDir.Name(), skillDir.Name(), nestedDir.Name()),
+				})
+			}
 		}
 	}
 	return resources
@@ -333,15 +417,45 @@ func scanSkillResourcesStrict(ctx context.Context, root string) ([]SkillResource
 			if err != nil {
 				return nil, fmt.Errorf("inspect %s: %w", filePath, err)
 			}
-			if !exists {
+			if exists {
+				resources = append(resources, SkillResource{
+					AppID:      appDir.Name(),
+					ResourceID: skillDir.Name(),
+					FilePath:   filePath,
+					PublicPath: fmt.Sprintf("/skills/%s/%s/SKILL.md", appDir.Name(), skillDir.Name()),
+				})
+				continue
+			}
+
+			nestedRoot := filepath.Join(appRoot, skillDir.Name())
+			nestedDirs, err := os.ReadDir(nestedRoot)
+			if err != nil {
+				return nil, fmt.Errorf("read app %s/%s: %w", appDir.Name(), skillDir.Name(), err)
+			}
+			found := false
+			for _, nestedDir := range nestedDirs {
+				if !nestedDir.IsDir() || skipResourceDir(nestedDir.Name()) {
+					continue
+				}
+				found = true
+				filePath := filepath.Join(nestedRoot, nestedDir.Name(), "SKILL.md")
+				exists, err := regularFileExistsStrict(filePath)
+				if err != nil {
+					return nil, fmt.Errorf("inspect %s: %w", filePath, err)
+				}
+				if !exists {
+					return nil, fmt.Errorf("missing SKILL.md for %s/%s/%s", appDir.Name(), skillDir.Name(), nestedDir.Name())
+				}
+				resources = append(resources, SkillResource{
+					AppID:      skillDir.Name(),
+					ResourceID: nestedDir.Name(),
+					FilePath:   filePath,
+					PublicPath: fmt.Sprintf("/skills/%s/%s/%s/SKILL.md", appDir.Name(), skillDir.Name(), nestedDir.Name()),
+				})
+			}
+			if !found {
 				return nil, fmt.Errorf("missing SKILL.md for %s/%s", appDir.Name(), skillDir.Name())
 			}
-			resources = append(resources, SkillResource{
-				AppID:      appDir.Name(),
-				ResourceID: skillDir.Name(),
-				FilePath:   filePath,
-				PublicPath: fmt.Sprintf("/skills/%s/%s/SKILL.md", appDir.Name(), skillDir.Name()),
-			})
 		}
 	}
 	return resources, nil
