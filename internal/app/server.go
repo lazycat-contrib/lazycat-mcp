@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -86,8 +87,8 @@ func New(ctx context.Context, cfg Config, logger *zlog.Logger) (*App, error) {
 	app.upstreamFailureReasons = make(map[string]string)
 	app.missingProviderSince = make(map[int]time.Time)
 	app.skillResourceURIs = make(map[string]bool)
-	app.mcpHTTP = mcpserver.NewStreamableHTTPServer(mcpServer, mcpserver.WithHTTPContextFunc(app.contextWithLazycatRole))
-	app.mcpSSE = mcpserver.NewSSEServer(mcpServer, mcpserver.WithSSEContextFunc(app.contextWithLazycatRole))
+	app.mcpHTTP = withLazyCatProxyHost(mcpserver.NewStreamableHTTPServer(mcpServer, mcpserver.WithHTTPContextFunc(app.contextWithLazycatRole)))
+	app.mcpSSE = withLazyCatProxyHost(mcpserver.NewSSEServer(mcpServer, mcpserver.WithSSEContextFunc(app.contextWithLazycatRole)))
 	app.ui = web.Console()
 	app.providerProxy = app.withMCPProxyLogging(proxy.New(providers, tickets))
 	app.startMCPLogCleanup(ctx)
@@ -212,6 +213,42 @@ func tokenFromRequest(r *http.Request) string {
 		return strings.TrimSpace(auth[7:])
 	}
 	return strings.TrimSpace(r.Header.Get("X-MCP-Token"))
+}
+
+func withLazyCatProxyHost(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		trustedHost := normalizeHost(os.Getenv("LAZYCAT_APP_DOMAIN"))
+		localAddr, _ := r.Context().Value(http.LocalAddrContextKey).(net.Addr)
+		if trustedHost == "" || normalizeHost(r.Host) != trustedHost || !isLoopbackAddress(r.RemoteAddr) || localAddr == nil || !isLoopbackAddress(localAddr.String()) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		proxyRequest := r.Clone(r.Context())
+		proxyRequest.Host = "localhost"
+		next.ServeHTTP(w, proxyRequest)
+	})
+}
+
+func normalizeHost(value string) string {
+	value = strings.TrimSpace(value)
+	if host, _, err := net.SplitHostPort(value); err == nil {
+		value = host
+	}
+	return strings.TrimSuffix(strings.ToLower(strings.Trim(value, "[]")), ".")
+}
+
+func isLoopbackAddress(value string) bool {
+	host := strings.TrimSpace(value)
+	if parsedHost, _, err := net.SplitHostPort(host); err == nil {
+		host = parsedHost
+	}
+	host = strings.Trim(host, "[]")
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 func setSecurityHeaders(w http.ResponseWriter) {
