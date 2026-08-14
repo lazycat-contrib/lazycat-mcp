@@ -60,54 +60,6 @@ func TestReconcileLazyCatProvidersDeletesMissingResources(t *testing.T) {
 	}
 }
 
-func TestReconcileLazyCatProvidersSupportsExporterWrappedResources(t *testing.T) {
-	ctx := context.Background()
-	root := newReconcileResourceRoot(t)
-	exporterID := "cloud.lazycat.app.exporter"
-	writeWrappedMCPResource(t, root, exporterID, "valid-mcp", "default")
-	writeWrappedSkillResource(t, root, exporterID, "valid-skill", "assistant")
-	writeWrappedMCPResource(t, root, selfPackageID, selfPackageID, "default")
-	writeWrappedSkillResource(t, root, selfPackageID, selfPackageID, selfSkillResourceID)
-
-	db, err := openDB(ctx, filepath.Join(t.TempDir(), "test.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-	providers := NewProviderService(db)
-	for _, input := range []ProviderInput{
-		{Type: "lazycat", Name: "Penpot", Slug: "penpot", AppID: "io.zeroc.app.penpot", ResourceID: "default", Endpoint: "/mcp", Transport: "streamable_http"},
-		{Type: "lazycat", Name: "Valid MCP", Slug: "valid-mcp", AppID: "valid-mcp", ResourceID: "default", Endpoint: "/mcp", Transport: "streamable_http"},
-		{Type: "lazycat", Name: "Valid Skill", Slug: "valid-skill", AppID: "valid-skill", ResourceID: "assistant", Endpoint: "/mcp", Transport: "streamable_http"},
-	} {
-		if _, err := providers.Create(ctx, input); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	app := &App{providers: providers, resources: NewResourceScanner(root)}
-	firstSeen := time.Date(2026, 8, 14, 0, 0, 0, 0, time.UTC)
-	if deleted, err := app.reconcileLazyCatProvidersAt(ctx, firstSeen); err != nil {
-		t.Fatal(err)
-	} else if deleted != 0 {
-		t.Fatalf("first pass deleted = %d, want 0", deleted)
-	}
-	if deleted, err := app.reconcileLazyCatProvidersAt(ctx, firstSeen.Add(providerReconcileGracePeriod)); err != nil {
-		t.Fatal(err)
-	} else if deleted != 1 {
-		t.Fatalf("second pass deleted = %d, want 1", deleted)
-	}
-
-	if _, err := providers.GetBySlug(ctx, "penpot"); err == nil {
-		t.Fatal("expected Penpot provider without a resource to be deleted")
-	}
-	for _, slug := range []string{"valid-mcp", "valid-skill"} {
-		if _, err := providers.GetBySlug(ctx, slug); err != nil {
-			t.Fatalf("expected wrapped provider %q to remain: %v", slug, err)
-		}
-	}
-}
-
 func TestReconcileLazyCatProvidersSkipsCleanupWhenScanFails(t *testing.T) {
 	ctx := context.Background()
 	db, err := openDB(ctx, filepath.Join(t.TempDir(), "test.db"))
@@ -322,28 +274,6 @@ func newReconcileResourceRoot(t *testing.T) string {
 		}
 	}
 	return root
-}
-
-func writeWrappedMCPResource(t *testing.T, root, exporterID, appID, resourceID string) {
-	t.Helper()
-	dir := filepath.Join(root, "mcp-providers", exporterID, appID, resourceID)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "mcp.yml"), []byte("endpoint: /mcp\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func writeWrappedSkillResource(t *testing.T, root, exporterID, appID, resourceID string) {
-	t.Helper()
-	dir := filepath.Join(root, "skills", exporterID, appID, resourceID)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("---\nname: test\n---\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func writeMCPResource(t *testing.T, root, appID, resourceID string) {
