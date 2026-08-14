@@ -30,6 +30,7 @@ dist/lazycat-mcp
 dist/resources
 
 # Frontend build artifacts
+node_modules/
 frontend/node_modules/
 internal/web/dist/
 .tmp/\nmcp
